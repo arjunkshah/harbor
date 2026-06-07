@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Docs — Harbor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/style.css" />
+</head>
+<body data-page="docs">
+  <div class="noise"></div>
+  <div class="glow-orb glow-orb--1"></div>
+
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="/" class="logo">⚓ Harbor</a>
+      <div class="nav-links" id="nav-links"></div>
+    </div>
+  </nav>
+
+  <main class="container docs-layout">
+    <aside class="docs-sidebar">
+      <strong style="display:block;margin-bottom:12px;font-size:0.85rem">On this page</strong>
+      <a href="#setup">Setup</a>
+      <a href="#keys">API keys & credits</a>
+      <a href="#cli">CLI commands</a>
+      <a href="#dashboard">Dashboard</a>
+      <a href="#stack">Stack integration</a>
+      <a href="#submit">BuilderShip submit</a>
+    </aside>
+
+    <article class="doc-content">
+      <h1 style="font-size:2.2rem;margin-bottom:8px;letter-spacing:-0.02em">Documentation</h1>
+      <p style="color:var(--text-muted);margin-bottom:32px">Everything you need to install Harbor, connect sponsor APIs, and ship.</p>
+
+      <h2 id="setup">Setup (recommended)</h2>
+      <p>Run the interactive wizard — it writes your <code>.env</code>, trains memory, connects Composio, and runs doctor.</p>
+      <pre>git clone https://github.com/arjunkshah/harbor.git
+cd harbor
+pip install -e .
+harbor setup</pre>
+      <div class="doc-callout">Or use the install script: <code>./scripts/install_and_demo.sh</code> then <code>harbor setup</code> for live keys.</div>
+
+      <h2 id="keys">API keys & BuilderShip credits</h2>
+      <p>Register at <a href="https://ship.builders">ship.builders</a> first. Sponsors provide credits through June 12:</p>
+      <ul>
+        <li><strong>Nebius</strong> — <a href="https://tokenfactory.nebius.com">tokenfactory.nebius.com</a> → API key</li>
+        <li><strong>Composio</strong> — <a href="https://dashboard.composio.dev">dashboard.composio.dev</a> → API key</li>
+        <li><strong>Tavily</strong> — <a href="https://app.tavily.com">app.tavily.com</a> → API key</li>
+        <li><strong>OpenClaw</strong> — free local runtime, no cloud key</li>
+      </ul>
+      <p>Join sponsor Discords from the BuilderShip site if keys don't appear after registration.</p>
+
+      <h3>.env variables</h3>
+      <pre>NEBIUS_API_KEY=
+COMPOSIO_API_KEY=
+TAVILY_API_KEY=
+GITHUB_OWNER=your-org
+GITHUB_REPO=your-repo
+SLACK_CHANNEL_ID=C01234567
+LINEAR_TEAM_ID=
+HARBOR_USER_ID=harbor-builder-001
+HARBOR_DEMO=0</pre>
+
+      <h2 id="cli">CLI commands</h2>
+      <ul>
+        <li><code>harbor setup</code> — interactive API key + OAuth wizard</li>
+        <li><code>harbor doctor</code> — verify all integrations</li>
+        <li><code>harbor brief</code> — morning brief workflow</li>
+        <li><code>harbor incident "…"</code> — incident commander</li>
+        <li><code>harbor serve</code> — web + dashboard + API</li>
+        <li><code>harbor dashboard</code> — open dashboard (starts server)</li>
+        <li><code>harbor connect github</code> — Composio OAuth link</li>
+        <li><code>harbor demo</code> — no keys required</li>
+      </ul>
+
+      <h2 id="dashboard">Dashboard</h2>
+      <p>The dashboard requires the local server (workflows hit your machine's API keys):</p>
+      <pre>harbor serve
+# → http://localhost:8787/dashboard</pre>
+      <p>From the dashboard you can:</p>
+      <ul>
+        <li>See integration health & masked key status</li>
+        <li>Trigger morning briefs and incident runs</li>
+        <li>Browse run history, KV savings, and turn logs</li>
+      </ul>
+
+      <h2 id="stack">Stack integration</h2>
+      <h3>Tavily</h3>
+      <p>Search, multi-search, URL extract, Q&A synthesis, company intel, social pulse — all used in agent gather phase.</p>
+      <h3>Composio</h3>
+      <p>GitHub, Slack, Linear, Gmail — read during gather, write during act (Slack digest, Linear tickets).</p>
+      <h3>Nebius Token Factory</h3>
+      <p>OpenAI-compatible chat completions with tool calling every agent turn.</p>
+      <h3>SuperCompress</h3>
+      <p>Compresses Tavily + Composio context before each Nebius call (~35% token budget).</p>
+      <h3>OpenClaw</h3>
+      <p>Webhook at <code>/openclaw/chat</code>, skill in <code>openclaw/SKILL.md</code>, cron example included.</p>
+
+      <h2 id="submit">BuilderShip submission</h2>
+      <ol>
+        <li>Register + Luma Hacker ticket</li>
+        <li>Public repo: github.com/arjunkshah/harbor</li>
+        <li>Post demo video — tag @ship_builders @nebiusai @composio @tavilyai @openclaw</li>
+        <li>Submit by June 12, 23:59 PT</li>
+      </ol>
+      <p>Full checklist in <a href="https://github.com/arjunkshah/harbor/blob/main/SUBMISSION.md">SUBMISSION.md</a> on GitHub.</p>
+    </article>
+  </main>
+
+  <footer>
+    <div class="container">
+      <a href="/">Home</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="https://github.com/arjunkshah/harbor">GitHub</a>
+      <p style="margin-top:12px">Harbor · MIT · BuilderShip 2026</p>
+    </div>
+  </footer>
+  <script src="/assets/js/shared.js"></script>
+</body>
+</html>

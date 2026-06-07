@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
+import webbrowser
 from typing import Optional
 
 import typer
@@ -12,6 +15,7 @@ from rich.panel import Panel
 
 from harbor.config import get_settings
 from harbor.doctor import run_doctor
+from harbor.setup import run_setup
 from harbor.workflows import run_incident_commander, run_morning_brief
 
 app = typer.Typer(
@@ -20,6 +24,34 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 console = Console()
+
+
+@app.command()
+def setup(
+    skip_connect: bool = typer.Option(False, "--skip-connect", help="Skip Composio OAuth prompts"),
+) -> None:
+    """Interactive setup — API keys, .env, checkpoint, Composio OAuth, doctor."""
+    ok = run_setup(open_dashboard=False, skip_connect=skip_connect)
+    raise typer.Exit(0 if ok else 1)
+
+
+@app.command()
+def dashboard(
+    port: int = typer.Option(8787, help="Server port"),
+    open_browser: bool = typer.Option(True, "--open/--no-open", help="Open dashboard in browser"),
+) -> None:
+    """Open the Harbor dashboard (starts server if not running)."""
+    url = f"http://127.0.0.1:{port}/dashboard"
+    if open_browser:
+        console.print(f"[cyan]Opening[/cyan] {url}")
+        console.print("[dim]Starting server — press Ctrl+C to stop[/dim]\n")
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+    import uvicorn
+
+    uvicorn.run("harbor.server.app:app", host="0.0.0.0", port=port, reload=False)
 
 
 @app.command()
@@ -65,6 +97,7 @@ def demo() -> None:
     console.print()
     out = run_morning_brief()
     _print_workflow_output(out, False)
+    console.print("\n[dim]Ready for real keys? Run:[/dim] [cyan]harbor setup[/cyan]")
 
 
 @app.command("connect")
@@ -84,9 +117,13 @@ def serve(
     host: str = typer.Option("0.0.0.0", help="Bind host"),
     port: int = typer.Option(8787, help="Bind port"),
 ) -> None:
-    """Start FastAPI server for OpenClaw webhook bridge."""
+    """Start web server — landing, docs, dashboard, API."""
     import uvicorn
 
+    console.print(f"[cyan]Harbor[/cyan] → http://127.0.0.1:{port}")
+    console.print(f"  Dashboard  http://127.0.0.1:{port}/dashboard")
+    console.print(f"  Docs       http://127.0.0.1:{port}/docs")
+    console.print(f"  API        http://127.0.0.1:{port}/api/reference\n")
     uvicorn.run("harbor.server.app:app", host=host, port=port, reload=False)
 
 
@@ -108,6 +145,7 @@ def _print_workflow_output(out, json_out: bool) -> None:
     console.print(Panel(Markdown(r.summary or "_No summary_"), title="Brief"))
     console.print(f"\n[dim]SuperCompress KV savings: {r.memory_savings_pct:.1f}%[/dim]")
     console.print(f"[dim]Composio actions: {len(r.actions_taken)} | Slack: {out.posted_to_slack} | Linear: {out.linear_tickets_created}[/dim]")
+    console.print(f"[dim]View in dashboard:[/dim] [cyan]harbor dashboard[/cyan]")
     for t in r.turns:
         console.print(f"  [cyan]{t.phase}[/cyan] {t.detail}")
 

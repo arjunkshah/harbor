@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/assets/css/style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚓</text></svg>" />
 </head>
-<body>
+<body data-page="home">
   <div class="noise"></div>
   <div class="glow-orb glow-orb--1"></div>
   <div class="glow-orb glow-orb--2"></div>
@@ -25,13 +25,7 @@
         </svg>
         Harbor
       </a>
-      <div class="nav-links">
-        <a href="#how">How it works</a>
-        <a href="#stack">Stack</a>
-        <a href="#start">Quick start</a>
-        <a href="https://github.com/arjunkshah/harbor" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://ship.builders" target="_blank" rel="noopener" class="btn btn-primary">BuilderShip</a>
-      </div>
+      <div class="nav-links" id="nav-links"></div>
     </div>
   </nav>
 
@@ -47,8 +41,8 @@
           Harbor reads the web and your GitHub, Slack, Linear, and Gmail — compresses context so agents don’t forget — then posts your brief and files tickets.
         </p>
         <div class="hero-cta">
-          <a href="https://github.com/arjunkshah/harbor#quick-start" class="btn btn-primary">Get started →</a>
-          <a href="#how" class="btn btn-ghost">See the pipeline</a>
+          <a href="/dashboard" class="btn btn-primary">Open dashboard →</a>
+          <a href="/docs" class="btn btn-ghost">Read docs</a>
         </div>
       </div>
       <div class="terminal">
@@ -193,7 +187,8 @@
         </div>
       </div>
       <p style="margin-top: 24px; color: var(--text-muted); font-size: 0.9rem;">
-        API keys & free credits → <a href="https://github.com/arjunkshah/harbor/blob/main/docs/CREDITS.md">docs/CREDITS.md</a>
+        First time? Run <code style="font-family:var(--mono);color:var(--water-glow)">harbor setup</code> — interactive API key wizard.
+        <a href="/docs#setup">Full docs →</a>
       </p>
     </section>
 
@@ -212,14 +207,16 @@
   <footer>
     <div class="container">
       <p>
+        <a href="/docs">Docs</a>
+        <a href="/dashboard">Dashboard</a>
         <a href="https://github.com/arjunkshah/harbor">GitHub</a>
-        <a href="https://github.com/arjunkshah/harbor#web-ui">API</a>
         <a href="https://ship.builders">BuilderShip</a>
       </p>
       <p style="margin-top: 12px;">Harbor · MIT · BuilderShip 2026</p>
     </div>
   </footer>
 
+  <script src="/assets/js/shared.js"></script>
   <script src="/assets/js/main.js"></script>
 </body>
 </html>

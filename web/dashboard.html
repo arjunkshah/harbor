@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Harbor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/style.css" />
+</head>
+<body data-page="dashboard">
+  <div class="noise"></div>
+  <div class="glow-orb glow-orb--1"></div>
+  <div class="glow-orb glow-orb--2"></div>
+
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="/" class="logo">⚓ Harbor</a>
+      <div class="nav-links" id="nav-links"></div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div id="setup-banner">
+      <div class="alert alert-warn" style="margin-top:24px">
+        API keys not configured. Run <code>harbor setup</code> in your terminal, then refresh.
+        <a href="/docs#setup" style="margin-left:8px">Setup docs →</a>
+      </div>
+    </div>
+
+    <header class="dashboard-header">
+      <div>
+        <p class="section-label" style="margin-bottom:8px">Your harbor</p>
+        <h1>Dashboard</h1>
+        <p style="color:var(--text-muted);font-size:0.95rem;margin-top:8px">Run briefs, track KV savings, view Composio actions.</p>
+      </div>
+      <button type="button" class="btn btn-ghost" id="btn-refresh">Refresh</button>
+    </header>
+
+    <div class="stats" style="margin-top:0;margin-bottom:24px">
+      <div class="stat"><div class="stat-value" id="stat-runs">0</div><div class="stat-label">Total runs</div></div>
+      <div class="stat"><div class="stat-value" id="stat-kv">0%</div><div class="stat-label">Avg KV saved</div></div>
+      <div class="stat"><div class="stat-value" id="stat-slack">0</div><div class="stat-label">Slack posts</div></div>
+      <div class="stat"><div class="stat-value" id="stat-linear">0</div><div class="stat-label">Linear tickets</div></div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div>
+        <div class="panel">
+          <div class="panel-title">Run history</div>
+          <div class="run-list" id="run-list">
+            <div class="empty-state"><span class="spinner"></span><p style="margin-top:12px">Loading…</p></div>
+          </div>
+        </div>
+        <div class="panel detail-view" id="run-detail">
+          <div class="empty-state"><p>Select a run to view details</p></div>
+        </div>
+      </div>
+
+      <aside>
+        <div class="panel">
+          <div class="panel-title">Integration status</div>
+          <div class="status-grid" id="status-checks"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Configuration</div>
+          <div id="config-panel"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Morning brief</div>
+          <div class="form-row">
+            <label for="brief-company">Company intel</label>
+            <input id="brief-company" type="text" value="Composio" placeholder="Company name" />
+          </div>
+          <div class="form-row">
+            <label for="brief-focus">Research focus</label>
+            <input id="brief-focus" type="text" value="AI agent infrastructure" />
+          </div>
+          <button type="button" class="btn btn-primary btn-block" id="btn-brief">Run morning brief</button>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Incident commander</div>
+          <div class="form-row">
+            <label for="incident-query">Incident</label>
+            <textarea id="incident-query" placeholder="API latency spike in us-east…"></textarea>
+          </div>
+          <div class="form-row">
+            <label for="incident-service">Service</label>
+            <input id="incident-service" type="text" value="production API" />
+          </div>
+          <button type="button" class="btn btn-ghost btn-block" id="btn-incident" style="border-color:var(--sunset);color:var(--sunset)">Run incident</button>
+        </div>
+
+        <p id="run-status" style="text-align:center;font-size:0.85rem;color:var(--water-glow);min-height:24px;margin-top:8px"></p>
+      </aside>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <a href="/docs">Docs</a>
+      <a href="https://github.com/arjunkshah/harbor">GitHub</a>
+      <p style="margin-top:12px">Local dashboard · requires <code>harbor serve</code></p>
+    </div>
+  </footer>
+  <script src="/assets/js/shared.js"></script>
+  <script src="/assets/js/dashboard.js"></script>
+</body>
+</html>

@@ -2,88 +2,85 @@
 
 **Autonomous builder ops for the [BuilderShip](https://ship.builders) stack.**
 
-Harbor runs morning briefs and incident response across **Tavily**, **Composio**, **Nebius Token Factory**, **OpenClaw**, and **SuperCompress** — the memory layer that keeps agent loops from forgetting at turn 4.
+Harbor runs morning briefs and incident response across **Tavily**, **Composio**, **Nebius**, **OpenClaw**, and **SuperCompress**.
 
-🌐 **Landing page:** run `harbor serve` → [localhost:8787](http://localhost:8787)  
-📦 **Repo:** [github.com/arjunkshah/harbor](https://github.com/arjunkshah/harbor)
+📦 **https://github.com/arjunkshah/harbor**
 
 ---
 
-## What it does
-
-| Command | Description |
-|---------|-------------|
-| `harbor brief` | Tavily intel + Composio gather → SuperCompress → Nebius → Slack + Linear |
-| `harbor incident "…"` | Real-time search + cross-app incident response |
-| `harbor doctor` | Verify all integrations |
-| `harbor serve` | Web UI + REST API + OpenClaw webhook |
-| `harbor demo` | Full demo with fixtures (no API keys) |
-
-## Quick start
+## For users (start here)
 
 ```bash
 git clone https://github.com/arjunkshah/harbor.git && cd harbor
-chmod +x scripts/install_and_demo.sh && ./scripts/install_and_demo.sh
+pip install -e .
+harbor setup          # ← interactive API keys, .env, OAuth, doctor
+harbor dashboard      # ← pretty UI for your runs
 ```
 
-Live stack:
+Or one-shot install + demo:
 
 ```bash
-cp .env.example .env   # see docs/CREDITS.md for BuilderShip sponsor keys
-harbor connect github && harbor connect slack
-harbor doctor && harbor brief
+./scripts/install_and_demo.sh
+harbor setup
 ```
 
-Full setup → **[docs/SETUP.md](docs/SETUP.md)**  
-API keys & free credits → **[docs/CREDITS.md](docs/CREDITS.md)**  
-Submission checklist → **[SUBMISSION.md](SUBMISSION.md)**
+### Web app
+
+| URL | What |
+|-----|------|
+| `/` | Marketing landing |
+| `/docs` | Setup & integration docs |
+| `/dashboard` | Your runs, health, trigger briefs |
+| `/api/reference` | OpenAPI |
+
+```bash
+harbor serve
+# http://localhost:8787
+```
+
+---
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| **`harbor setup`** | Interactive wizard — API keys → `.env` → checkpoint → Composio OAuth → doctor |
+| `harbor dashboard` | Open dashboard (starts server) |
+| `harbor serve` | Web + docs + dashboard + API |
+| `harbor brief` | Morning brief workflow |
+| `harbor incident "…"` | Incident commander |
+| `harbor doctor` | Verify integrations |
+| `harbor demo` | No API keys required |
+
+---
+
+## API keys (BuilderShip credits)
+
+See **[docs/CREDITS.md](docs/CREDITS.md)** — register at [ship.builders](https://ship.builders), then get keys from Nebius, Composio, Tavily.
+
+`harbor setup` prompts for all keys and writes `.env` for you.
+
+---
 
 ## Architecture
 
 ```
-harbor brief
-    │
-    ├─ Tavily ─────── search, extract, company intel, social pulse
-    ├─ Composio ───── GitHub · Linear · Gmail (read)
-    ├─ SuperCompress ─ compress context (~35% token budget)
-    ├─ Nebius ─────── Token Factory inference + tool calling
-    └─ Composio ───── Slack post · Linear tickets (write)
+User → Dashboard / CLI
+         → Tavily (research)
+         → Composio (GitHub · Slack · Linear · Gmail)
+         → SuperCompress (memory)
+         → Nebius (inference + tools)
+         → Composio (Slack · Linear actions)
+         → .harbor/runs.json (history for dashboard)
 ```
 
-## BuilderShip integration map
+---
 
-| Sponsor | Harbor usage |
-|---------|--------------|
-| **Tavily** | 6 surfaces: search, multi-search, extract, Q&A, company intel, social |
-| **Composio** | Session + 4 toolkits, gather + execute in agent loop, MCP URL |
-| **Nebius** | Chat completions every turn with tool calling |
-| **OpenClaw** | SKILL.md, webhook `/openclaw/chat`, cron, Composio plugin docs |
-| **SuperCompress** | `compress_for_turn()` before each Nebius call |
+## Docs
 
-## Web UI
-
-```bash
-harbor serve
-# http://localhost:8787 — landing page
-# http://localhost:8787/docs — OpenAPI
-# http://localhost:8787/health — stack status
-```
-
-## Development
-
-```bash
-pip install -e ".[dev]"
-python scripts/train_memory_checkpoint.py --fast
-HARBOR_DEMO=1 pytest -q
-```
-
-## Submission
-
-Built for [BuilderShip](https://ship.builders) · Deadline **June 12, 23:59 PT**
-
-Post template & video checklist → **[SUBMISSION.md](SUBMISSION.md)**
-
-Tag: `@ship_builders @nebiusai @composio @tavilyai @openclaw`
+- [docs/SETUP.md](docs/SETUP.md)
+- [docs/CREDITS.md](docs/CREDITS.md)
+- [SUBMISSION.md](SUBMISSION.md)
 
 ## License
 

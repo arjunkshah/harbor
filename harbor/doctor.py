@@ -24,11 +24,10 @@ class CheckResult:
     detail: str
 
 
-def run_doctor(settings: Settings | None = None) -> bool:
+def run_doctor_checks(settings: Settings | None = None) -> List[CheckResult]:
     s = settings or get_settings()
     results: List[CheckResult] = []
 
-    # Memory layer
     try:
         sample = "def authenticate(user):\n    return user.is_active\n\n" * 40
         sample += "class User:\n    def fetch(self):\n        pass\n"
@@ -45,7 +44,6 @@ def run_doctor(settings: Settings | None = None) -> bool:
     except Exception as exc:
         results.append(CheckResult("SuperCompress memory", False, str(exc)))
 
-    # Tavily
     try:
         t = get_tavily(s)
         bundle = t.search("OpenClaw agent runtime")
@@ -55,7 +53,6 @@ def run_doctor(settings: Settings | None = None) -> bool:
     except Exception as exc:
         results.append(CheckResult("Tavily search", False, str(exc)))
 
-    # Composio
     try:
         c = get_composio(s)
         gh = c.gather_github()
@@ -70,7 +67,6 @@ def run_doctor(settings: Settings | None = None) -> bool:
     except Exception as exc:
         results.append(CheckResult("Composio toolkits", False, str(exc)))
 
-    # Nebius
     try:
         n = get_nebius(s)
         resp = n.chat([{"role": "user", "content": "Reply with exactly: harbor-ok"}])
@@ -85,17 +81,31 @@ def run_doctor(settings: Settings | None = None) -> bool:
     except Exception as exc:
         results.append(CheckResult("Nebius inference", False, str(exc)))
 
-    # OpenClaw config
     from pathlib import Path
 
     skill = Path(__file__).resolve().parent.parent / "openclaw" / "SKILL.md"
+    env_file = Path(__file__).resolve().parent.parent / ".env"
+    env_ok = s.demo_mode or (env_file.exists() and s.has_live_stack())
+    results.append(
+        CheckResult(
+            "Environment",
+            env_ok,
+            "demo mode" if s.demo_mode else (".env configured" if env_file.exists() else "Run: harbor setup"),
+        )
+    )
     results.append(
         CheckResult(
             "OpenClaw skill",
             skill.exists(),
-            str(skill) if skill.exists() else "SKILL.md missing",
+            "SKILL.md ready" if skill.exists() else "SKILL.md missing",
         )
     )
+    return results
+
+
+def run_doctor(settings: Settings | None = None) -> bool:
+    s = settings or get_settings()
+    results = run_doctor_checks(s)
 
     table = Table(title="Harbor Doctor")
     table.add_column("Component")
@@ -111,5 +121,7 @@ def run_doctor(settings: Settings | None = None) -> bool:
     mode = "DEMO" if s.demo_mode else "LIVE"
     console.print(f"\n[bold]Mode:[/bold] {mode}")
     if s.demo_mode:
-        console.print("[dim]Set HARBOR_DEMO=0 and API keys in .env for live stack.[/dim]")
+        console.print("[dim]Run [cyan]harbor setup[/cyan] for live stack.[/dim]")
+    elif not all_ok:
+        console.print("[dim]Run [cyan]harbor setup[/cyan] to fix configuration.[/dim]")
     return all_ok

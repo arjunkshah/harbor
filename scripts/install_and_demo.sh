@@ -19,6 +19,7 @@ echo "==> Running full demo workflow..."
 HARBOR_DEMO=1 harbor demo
 
 echo ""
-echo "Done. Copy .env.example to .env, add API keys, then:"
-echo "  harbor doctor"
-echo "  harbor brief"
+echo "Done. Next steps:"
+echo "  harbor setup     # interactive API keys + OAuth (recommended)"
+echo "  harbor serve     # web + docs + dashboard"
+echo "  harbor dashboard # open dashboard in browser"
