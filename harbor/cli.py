@@ -100,6 +100,49 @@ def demo() -> None:
     console.print("\n[dim]Ready for real keys? Run:[/dim] [cyan]harbor setup[/cyan]")
 
 
+@app.command("integrations")
+def integrations_cmd(
+    action: str = typer.Argument("list", help="list | set"),
+    toolkits: Optional[str] = typer.Argument(None, help="For set: github,linear,gmail,slack"),
+) -> None:
+    """List or choose which Composio integrations Harbor uses."""
+    from harbor.composio import get_composio
+    from harbor.workspace import integration_catalog, set_enabled_toolkits
+
+    hub = get_composio()
+    connected = hub.integration_status()
+
+    if action == "list":
+        rows = integration_catalog(connected=connected)
+        for row in rows:
+            flags = []
+            if row["enabled"]:
+                flags.append("enabled")
+            if row["connected"]:
+                flags.append("connected")
+            flag_txt = f" [{', '.join(flags)}]" if flags else ""
+            console.print(f"  [cyan]{row['slug']}[/cyan] — {row['label']}{flag_txt}")
+            console.print(f"    [dim]{row['blurb']}[/dim]")
+        console.print("\n[dim]Enable:[/dim] harbor integrations set github,linear,gmail")
+        console.print("[dim]Connect OAuth:[/dim] harbor connect github")
+        return
+
+    if action == "set":
+        if not toolkits:
+            console.print("[red]Usage:[/red] harbor integrations set github,linear")
+            raise typer.Exit(1)
+        slugs = [s.strip() for s in toolkits.split(",") if s.strip()]
+        enabled = set_enabled_toolkits(slugs)
+        hub.invalidate_cache()
+        get_settings.cache_clear()
+        console.print(f"[green]✓ Enabled:[/green] {', '.join(enabled)}")
+        console.print("[dim]Connect OAuth for each: harbor connect <slug>[/dim]")
+        return
+
+    console.print("[red]Unknown action.[/red] Use list or set.")
+    raise typer.Exit(1)
+
+
 @app.command("connect")
 def connect(
     toolkit: str = typer.Argument(..., help="github | slack | linear | gmail"),

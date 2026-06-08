@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Harbor — Local dashboard</title>
+  <title>Harbor — Builder workspace</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -22,76 +22,88 @@
   </nav>
 
   <main class="container">
-    <div id="setup-banner">
-      <div class="alert alert-info" style="margin-top:24px" id="static-notice">
-        <strong>Local only.</strong> This dashboard runs on your machine — integration management, run history, and live briefs.
-        The public site is at <a href="https://arjunkshah.github.io/harbor/" target="_blank" rel="noopener">arjunkshah.github.io/harbor</a>.
-      </div>
-    </div>
+    <div id="setup-banner"></div>
 
     <header class="dashboard-header">
       <div>
-        <p class="section-label" style="margin-bottom:8px">Local · <span id="health-status">checking…</span></p>
-        <h1>Dashboard</h1>
-        <p style="color:var(--text-muted);font-size:0.95rem;margin-top:8px">
-          Connect apps, run briefs, browse history. Requires <code>harbor serve</code>.
+        <p class="section-label" style="margin-bottom:8px">Builder workspace · <span id="health-status">checking…</span></p>
+        <h1>Harbor</h1>
+        <p style="color:var(--text-muted);font-size:0.95rem;margin-top:8px" id="workspace-tagline">
+          Centralized agent for vibe coders — projects, integrations, prompts, progress.
         </p>
       </div>
       <button type="button" class="btn btn-ghost" id="btn-refresh">Refresh</button>
     </header>
 
+    <div class="workspace-bar">
+      <label style="font-size:0.85rem;color:var(--text-muted)">Project</label>
+      <select id="project-select" aria-label="Active project"></select>
+      <button type="button" class="btn btn-ghost" id="btn-new-project" style="padding:8px 14px;font-size:0.85rem">+ New</button>
+      <span style="flex:1"></span>
+      <span id="project-meta" style="font-size:0.82rem;color:var(--text-muted)"></span>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-title">Why Harbor (not just one OpenClaw prompt)</div>
+      <ul class="diff-list" id="diff-list"></ul>
+    </div>
+
     <div class="stats" style="margin-top:0;margin-bottom:24px">
       <div class="stat"><div class="stat-value" id="stat-runs">0</div><div class="stat-label">Total runs</div></div>
       <div class="stat"><div class="stat-value" id="stat-kv">0%</div><div class="stat-label">Avg KV saved</div></div>
-      <div class="stat"><div class="stat-value" id="stat-slack">0</div><div class="stat-label">Slack posts</div></div>
-      <div class="stat"><div class="stat-value" id="stat-linear">0</div><div class="stat-label">Linear tickets</div></div>
+      <div class="stat"><div class="stat-value" id="stat-integrations">0</div><div class="stat-label">Integrations on</div></div>
+      <div class="stat"><div class="stat-value" id="stat-connected">0</div><div class="stat-label">OAuth linked</div></div>
     </div>
 
     <div class="dashboard-grid">
       <div>
         <div class="panel">
-          <div class="panel-title">Run history</div>
+          <div class="panel-title">Progress · run history</div>
           <div class="run-list" id="run-list">
             <div class="empty-state"><span class="spinner"></span><p style="margin-top:12px">Loading…</p></div>
           </div>
         </div>
         <div class="panel detail-view" id="run-detail">
-          <div class="empty-state"><p>Select a run to view details</p></div>
+          <div class="empty-state"><p>Select a run — view summary, turns, and agent prompts used</p></div>
         </div>
       </div>
 
       <aside>
         <div class="panel">
-          <div class="panel-title">Integration status</div>
-          <div class="status-grid" id="status-checks"></div>
+          <div class="panel-title">Integrations · choose what you use</div>
+          <div id="integrations-panel"></div>
+          <button type="button" class="btn btn-primary btn-block" id="btn-save-integrations">Save integration choices</button>
         </div>
 
         <div class="panel">
-          <div class="panel-title">Configuration</div>
-          <div id="config-panel"></div>
-          <p style="margin-top:12px;font-size:0.82rem;color:var(--text-muted)">
-            Manage keys & OAuth: <code>harbor setup</code> · <code>harbor connect github</code>
-          </p>
+          <div class="panel-title">Agent prompts</div>
+          <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">Harbor's system + dynamic task prompts (change when you toggle integrations).</p>
+          <div id="prompts-panel"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Stack health</div>
+          <div class="status-grid" id="status-checks"></div>
         </div>
 
         <div class="panel">
           <div class="panel-title">Morning brief</div>
           <div class="form-row">
             <label for="brief-company">Company intel</label>
-            <input id="brief-company" type="text" value="Composio" placeholder="Company name" />
+            <input id="brief-company" type="text" value="Composio" />
           </div>
           <div class="form-row">
             <label for="brief-focus">Research focus</label>
             <input id="brief-focus" type="text" value="AI agent infrastructure" />
           </div>
-          <button type="button" class="btn btn-primary btn-block" id="btn-brief">Run morning brief</button>
+          <button type="button" class="btn btn-primary btn-block" id="btn-brief">Run for active project</button>
         </div>
 
         <div class="panel">
           <div class="panel-title">Incident commander</div>
           <div class="form-row">
             <label for="incident-query">Incident</label>
-            <textarea id="incident-query" placeholder="API latency spike in us-east…"></textarea>
+            <textarea id="incident-query" placeholder="API latency spike…"></textarea>
           </div>
           <div class="form-row">
             <label for="incident-service">Service</label>
@@ -100,7 +112,7 @@
           <button type="button" class="btn btn-ghost btn-block" id="btn-incident" style="border-color:var(--sunset);color:var(--sunset)">Run incident</button>
         </div>
 
-        <p id="run-status" style="text-align:center;font-size:0.85rem;color:var(--water-glow);min-height:24px;margin-top:8px"></p>
+        <p id="run-status" style="text-align:center;font-size:0.85rem;color:var(--water-glow);min-height:24px"></p>
       </aside>
     </div>
   </main>
@@ -110,7 +122,7 @@
       <a href="/docs">Docs</a>
       <a href="https://github.com/arjunkshah/harbor">GitHub</a>
       <a href="https://arjunkshah.github.io/harbor/">Project site</a>
-      <p style="margin-top:12px">Local dashboard · <code>harbor serve</code> · port 8787</p>
+      <p style="margin-top:12px">Local workspace · <code>harbor serve</code></p>
     </div>
   </footer>
   <script src="/assets/js/config.js"></script>

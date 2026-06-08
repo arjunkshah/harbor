@@ -16,6 +16,15 @@ from harbor.agent.prompts import OPENCLAW_BRIDGE_SYSTEM
 from harbor.config import get_settings
 from harbor.setup import env_status
 from harbor.store import get_run, list_runs, stats
+from harbor.workspace import (
+    create_project,
+    get_active_project,
+    integration_catalog,
+    prompt_catalog,
+    set_active_project,
+    set_enabled_toolkits,
+    workspace_overview,
+)
 from harbor.workflows import run_incident_commander, run_morning_brief
 
 WEB_DIR = Path(__file__).resolve().parent.parent.parent / "web"
@@ -75,8 +84,11 @@ def setup_page() -> FileResponse:
 @app.get("/api/dashboard/status")
 def dashboard_status() -> Dict[str, Any]:
     s = get_settings()
+    from harbor.composio import get_composio
     from harbor.doctor import run_doctor_checks
 
+    composio = get_composio()
+    connected = composio.integration_status()
     checks = run_doctor_checks(s)
     return {
         "config": env_status(),
@@ -86,9 +98,86 @@ def dashboard_status() -> Dict[str, Any]:
             "tavily": s.has_tavily(),
             "demo_mode": s.demo_mode,
         },
+        "toolkits": integration_catalog(connected=connected),
+        "workspace": workspace_overview(connected=connected),
         "checks": [{"name": c.name, "ok": c.ok, "detail": c.detail} for c in checks],
         "stats": stats(),
     }
+
+
+class IntegrationsBody(BaseModel):
+    enabled: List[str]
+
+
+@app.get("/api/dashboard/integrations")
+def dashboard_integrations() -> Dict[str, Any]:
+    from harbor.composio import get_composio
+
+    connected = get_composio().integration_status()
+    return {"toolkits": integration_catalog(connected=connected)}
+
+
+@app.put("/api/dashboard/integrations")
+def dashboard_integrations_update(body: IntegrationsBody) -> Dict[str, Any]:
+    from harbor.composio import get_composio
+
+    enabled = set_enabled_toolkits(body.enabled)
+    get_composio().invalidate_cache()
+    get_settings.cache_clear()
+    connected = get_composio().integration_status()
+    return {"enabled": enabled, "toolkits": integration_catalog(connected=connected)}
+
+
+@app.get("/api/dashboard/integrations/{slug}/connect-url")
+def dashboard_connect_url(slug: str) -> Dict[str, Any]:
+    from harbor.composio import get_composio
+
+    result = get_composio().auth_connect(slug)
+    if result.error and not result.already_connected:
+        raise HTTPException(400, result.error)
+    return {
+        "slug": slug,
+        "already_connected": result.already_connected,
+        "redirect_url": result.redirect_url,
+    }
+
+
+class ProjectBody(BaseModel):
+    name: str
+    focus: str = ""
+    company: str = ""
+    notes: str = ""
+
+
+@app.get("/api/dashboard/projects")
+def dashboard_projects() -> Dict[str, Any]:
+    return {"active": get_active_project(), "projects": workspace_overview().get("projects", [])}
+
+
+@app.post("/api/dashboard/projects")
+def dashboard_projects_create(body: ProjectBody) -> Dict[str, Any]:
+    proj = create_project(body.name, focus=body.focus, company=body.company, notes=body.notes)
+    return {"project": proj}
+
+
+@app.post("/api/dashboard/projects/{project_id}/activate")
+def dashboard_projects_activate(project_id: str) -> Dict[str, Any]:
+    try:
+        return {"project": set_active_project(project_id)}
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@app.get("/api/dashboard/prompts")
+def dashboard_prompts() -> Dict[str, Any]:
+    return {"prompts": prompt_catalog()}
+
+
+@app.get("/api/dashboard/workspace")
+def dashboard_workspace() -> Dict[str, Any]:
+    from harbor.composio import get_composio
+
+    return workspace_overview(connected=get_composio().integration_status())
 
 
 @app.get("/api/dashboard/runs")

@@ -1,6 +1,6 @@
 ---
 name: harbor
-description: Builder ops agent — morning briefs, incident response, cross-app automation via Composio + Tavily + Nebius with SuperCompress memory.
+description: Builder workspace — projects, integration picks, agent prompts, and cross-app ops via Composio + Tavily + Nebius with SuperCompress memory.
 metadata:
   openclaw:
     emoji: "⚓"
@@ -10,49 +10,38 @@ metadata:
 
 # Harbor Agent Skill
 
-Harbor is your builder operations co-pilot for the BuilderShip stack.
+Harbor is a **builder workspace** for vibe coders — not a single prompt. OpenClaw can call Harbor; Harbor owns memory, integrations, projects, and run history.
 
-## Capabilities
+## What Harbor adds beyond OpenClaw
 
-- **Morning Brief** — Tavily market intel + Composio GitHub/Linear/Gmail → SuperCompress → Nebius synthesis → Slack + Linear actions
-- **Incident Commander** — Real-time Tavily search + cross-app status updates
-- **Memory layer** — SuperCompress trims context before every Nebius inference turn
+- **SuperCompress** — trims context before every Nebius turn (~35–65% KV savings)
+- **Integration choice** — enable GitHub-only or add Linear/Gmail/Slack via `harbor integrations`
+- **Projects** — active build context in the local dashboard
+- **Prompt transparency** — view system + dynamic task prompts per workflow
+- **Progress** — run history, turn logs, actions in `.harbor/`
 
-## Commands (via Harbor CLI or HTTP bridge)
+## Commands
 
 ```bash
-harbor doctor          # verify full stack
-harbor brief           # run morning brief workflow
-harbor incident "..."  # incident commander
-harbor serve           # OpenClaw webhook bridge on :8787
+harbor setup              # API keys + pick integrations + OAuth
+harbor integrations list  # see enabled vs connected
+harbor integrations set github,linear,gmail
+harbor doctor
+harbor brief
+harbor incident "..."
+harbor serve              # local workspace dashboard :8787/dashboard
 ```
 
-## OpenClaw integration
+## OpenClaw bridge (optional)
 
-1. Install Harbor: `pip install -e .` in the harbor-agent repo
-2. Start bridge: `harbor serve`
-3. Point OpenClaw at `http://127.0.0.1:8787/openclaw/chat`
-
-Or install Composio plugin for native tool access:
+Harbor is not OpenClaw. Use the bridge when you want OpenClaw to trigger Harbor workflows:
 
 ```bash
-openclaw plugins install @composio/openclaw-plugin
+harbor serve
+# POST http://127.0.0.1:8787/openclaw/chat
 ```
 
 ## Environment
 
-Copy `.env.example` → `.env` and set:
-
-- `NEBIUS_API_KEY` — Token Factory inference
-- `COMPOSIO_API_KEY` — GitHub, Slack, Linear, Gmail
-- `TAVILY_API_KEY` — search + extract + research
-- `GITHUB_OWNER`, `GITHUB_REPO`, `SLACK_CHANNEL_ID`, `LINEAR_TEAM_ID`
-
-## Nebius deploy
-
-```bash
-openclaw skills install nebius
-./deploy/nebius/deploy.sh
-```
-
-See `deploy/nebius/` for serverless Dockerfile and deploy script.
+See `.env.example`. Required: `NEBIUS_API_KEY`, `COMPOSIO_API_KEY`, `TAVILY_API_KEY`.  
+Optional: `COMPOSIO_TOOLKITS=github,linear,gmail` (add `slack` only if needed).

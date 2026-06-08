@@ -10,6 +10,7 @@ from typing import Optional
 from harbor.agent import AgentRunResult, HarborAgent
 from harbor.config import Settings, get_settings
 from harbor.store import save_run
+from harbor.workspace import bump_project_run, get_active_project
 
 BRIEFS_DIR = Path(__file__).resolve().parent.parent / ".harbor" / "briefs"
 
@@ -36,6 +37,13 @@ def _save_brief_markdown(summary: str, workflow: str) -> Path:
 
 def _persist(out: WorkflowOutput, meta: Optional[dict] = None) -> WorkflowOutput:
     r = out.result
+    merged = dict(meta or {})
+    if r.prompt_meta:
+        merged["prompt"] = r.prompt_meta
+    project = get_active_project()
+    if project and "project_id" not in merged:
+        merged["project_id"] = project["id"]
+        merged["project_name"] = project["name"]
     save_run(
         out.name,
         r.summary,
@@ -44,8 +52,9 @@ def _persist(out: WorkflowOutput, meta: Optional[dict] = None) -> WorkflowOutput
         posted_to_slack=out.posted_to_slack,
         linear_tickets_created=out.linear_tickets_created,
         turns=[{"phase": t.phase, "detail": t.detail} for t in r.turns],
-        meta=meta or {},
+        meta=merged,
     )
+    bump_project_run(merged.get("project_id"))
     return out
 
 
@@ -55,7 +64,12 @@ def run_morning_brief(
     settings: Optional[Settings] = None,
     *,
     persist: bool = True,
+    project: Optional[dict] = None,
 ) -> WorkflowOutput:
+    proj = project or get_active_project()
+    if proj:
+        company = company if company != "Composio" else proj.get("company", company)
+        focus = focus if focus != "AI agent infrastructure" else proj.get("focus", focus)
     agent = HarborAgent(settings)
     result = agent.morning_brief(company=company, focus=focus)
     slack_actions = [a for a in result.actions_taken if "SLACK" in a.get("tool", "")]

@@ -34,6 +34,7 @@ class AgentRunResult:
     memory_savings_pct: float = 0.0
     turns: List[TurnLog] = field(default_factory=list)
     raw_messages: List[Dict[str, Any]] = field(default_factory=list)
+    prompt_meta: Dict[str, Any] = field(default_factory=dict)
 
 
 class HarborAgent:
@@ -143,6 +144,12 @@ class HarborAgent:
             memory_savings_pct=mem.kv_savings_pct,
             turns=turns,
             raw_messages=messages,
+            prompt_meta={
+                "system_preview": system_prompt[:400],
+                "user_task": user_prompt[:800],
+                "memory_policy": mem.policy_name,
+                "context_blocks": len(context_blocks),
+            },
         )
 
     def morning_brief(self, *, company: str = "OpenClaw", focus: str = "agent builders") -> AgentRunResult:

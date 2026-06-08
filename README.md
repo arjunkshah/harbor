@@ -54,7 +54,9 @@ harbor serve
 | Command | Description |
 |---------|-------------|
 | **`harbor setup`** | Interactive wizard — API keys → `.env` → checkpoint → Composio OAuth → doctor |
-| `harbor dashboard` | Open dashboard (starts server) |
+| `harbor integrations list` | See enabled vs OAuth-connected integrations |
+| `harbor integrations set github,linear` | Choose which Composio apps Harbor uses |
+| `harbor dashboard` | Open local workspace (starts server) |
 | `harbor serve` | Local server — dashboard + API (not GitHub Pages) |
 | `harbor brief` | Morning brief workflow |
 | `harbor incident "…"` | Incident commander |

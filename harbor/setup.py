@@ -154,6 +154,26 @@ def run_setup(*, open_dashboard: bool = True, skip_connect: bool = False) -> boo
     _write_env(updated)
     console.print(f"\n[green]✓ Saved {ENV_FILE}[/green]")
 
+    console.print("\n[bold]Step 1b — Choose integrations[/bold] (pick what you use)\n")
+    enabled_slugs: list[str] = []
+    for info in INTEGRATIONS:
+        default_on = info.slug in {
+            s.strip().lower()
+            for s in updated.get("COMPOSIO_TOOLKITS", ",".join(SOLO_DEFAULT_TOOLKITS)).split(",")
+            if s.strip()
+        }
+        if Confirm.ask(
+            f"  Enable [cyan]{info.label}[/cyan]? [dim]{info.blurb}[/dim]",
+            default=default_on,
+        ):
+            enabled_slugs.append(info.slug)
+    if not enabled_slugs:
+        enabled_slugs = ["github"]
+    from harbor.workspace import set_enabled_toolkits
+
+    updated["COMPOSIO_TOOLKITS"] = ",".join(set_enabled_toolkits(enabled_slugs))
+    console.print(f"  [green]✓ Using:[/green] {updated['COMPOSIO_TOOLKITS']}\n")
+
     from harbor.config import get_settings
 
     get_settings.cache_clear()
@@ -181,9 +201,10 @@ def run_setup(*, open_dashboard: bool = True, skip_connect: bool = False) -> boo
             from harbor.composio import get_composio
 
             composio = get_composio()
+            env_now = _read_env()
             enabled = {
                 part.strip().lower()
-                for part in updated.get("COMPOSIO_TOOLKITS", "").split(",")
+                for part in env_now.get("COMPOSIO_TOOLKITS", "").split(",")
                 if part.strip()
             }
             for info in INTEGRATIONS:
