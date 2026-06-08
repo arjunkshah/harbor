@@ -20,7 +20,8 @@
       <button type="button" data-view="connect">Connect</button>
       <button type="button" data-view="projects">Projects</button>
       <button type="button" data-view="agent">Agent</button>
-      <button type="button" data-view="build" class="">Build</button>
+      <button type="button" data-view="board">Board</button>
+      <button type="button" data-view="build">Build</button>
       <button type="button" data-view="plans">Plans</button>
       <button type="button" data-view="history">History</button>
     </nav>
@@ -71,6 +72,26 @@
         <div id="integrations-panel"></div>
         <button type="button" class="ws-btn ws-btn-primary ws-btn-block" id="btn-save-integrations">Save integration choices</button>
       </div>
+      <div class="ws-panel">
+        <span class="ws-panel-title">Settings</span>
+        <label class="ws-label" for="gmail-mode">Gmail sync</label>
+        <select class="ws-select" id="gmail-mode">
+          <option value="send">Auto-send emails</option>
+          <option value="draft">Save as drafts only</option>
+        </select>
+        <label class="ws-label" for="gmail-to">Gmail recipient</label>
+        <input class="ws-input" id="gmail-to" type="text" placeholder="me" />
+        <button type="button" class="ws-btn ws-btn-block" id="btn-save-settings">Save settings</button>
+      </div>
+    </section>
+
+    <!-- Board -->
+    <section class="ws-view" id="view-board">
+      <header class="ws-header">
+        <h1>Board</h1>
+        <p>Harbor's native kanban — plans, features, and build jobs land here automatically.</p>
+      </header>
+      <div id="board-columns" class="board-columns"></div>
     </section>
 
     <!-- Projects -->

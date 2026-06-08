@@ -222,6 +222,15 @@ def tick_worker() -> Optional[Dict[str, Any]]:
             jobs[i] = job
             _save(jobs)
             set_build_phase(job.project_id, "building")
+            try:
+                from harbor.board import on_job_status
+                from harbor.workspace import get_project_by_id
+
+                proj = get_project_by_id(job.project_id)
+                if proj:
+                    on_job_status(job.project_id, job.to_dict())
+            except Exception:
+                pass
             return job.to_dict()
         except Exception as exc:
             job.status = "failed"

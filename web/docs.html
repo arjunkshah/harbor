@@ -87,7 +87,8 @@ HARBOR_DEMO=0</pre>
         <p>The dashboard is a sidebar workspace with views:</p>
         <ul>
           <li><strong>Overview</strong> — stats, differentiators, stack health</li>
-          <li><strong>Connect</strong> — toggle and OAuth-link integrations</li>
+          <li><strong>Board</strong> — kanban for plans, PRD features, and coding jobs</li>
+          <li><strong>Connect</strong> — toggle integrations, OAuth, Gmail sync settings</li>
           <li><strong>Projects</strong> — what you're building</li>
           <li><strong>Agent</strong> — run tasks, briefs, incidents</li>
           <li><strong>Plans</strong> — agent roadmaps with checkable tasks</li>
@@ -95,16 +96,15 @@ HARBOR_DEMO=0</pre>
         </ul>
 
         <h2 id="integrations">Integrations (solo-friendly)</h2>
+        <p>Harbor ships a catalog of 12 Composio toolkits. Defaults: <strong>GitHub + Gmail</strong>. Linear is optional — use Harbor Board for planning instead.</p>
         <h3>GitHub</h3>
         <p>OAuth to your whole account — PRs, issues, commits. No repo config required.</p>
-        <h3>Linear</h3>
-        <p>Regular Linear workspace. Auto-picks default team for tickets.</p>
         <h3>Gmail</h3>
-        <p>Inbox triage for solo builders.</p>
-        <h3>Slack (optional)</h3>
-        <p>Only if you broadcast to a team channel. Skip entirely for solo work.</p>
-        <pre>harbor connect github
-harbor connect linear
+        <p>Sync emails auto-<strong>send</strong> by default when plans/PRD sync. Switch to drafts in Connect → Settings or <code>HARBOR_GMAIL_SYNC_MODE=draft</code>.</p>
+        <h3>Also available</h3>
+        <p>Slack, Notion, Google Calendar, Sheets, Drive, Discord, Trello, Jira, Airtable, Asana, Linear (optional).</p>
+        <pre>harbor integrations set github,gmail,notion,slack
+harbor connect github
 harbor connect gmail</pre>
 
         <h2 id="why">Why not OpenClaw alone</h2>

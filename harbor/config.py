@@ -45,6 +45,8 @@ class Settings(BaseSettings):
         validation_alias="COMPOSIO_TOOLKITS",
     )
     harbor_coding_agent: str = Field(default="auto", validation_alias="HARBOR_CODING_AGENT")
+    harbor_gmail_sync_mode: str = Field(default="send", validation_alias="HARBOR_GMAIL_SYNC_MODE")
+    harbor_gmail_to: str = Field(default="me", validation_alias="HARBOR_GMAIL_TO")
     harbor_auto_sync: bool = Field(default=True, validation_alias="HARBOR_AUTO_SYNC")
 
     @property
@@ -72,6 +74,9 @@ class Settings(BaseSettings):
 
     def has_tavily(self) -> bool:
         return bool(self.tavily_api_key.strip())
+
+    def gmail_sends_immediately(self) -> bool:
+        return self.harbor_gmail_sync_mode.strip().lower() != "draft"
 
     def has_live_stack(self) -> bool:
         return self.has_nebius() and self.has_composio() and self.has_tavily()

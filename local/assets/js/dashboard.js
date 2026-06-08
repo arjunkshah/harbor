@@ -260,6 +260,9 @@ async function refresh() {
   const build = await loadBuild();
   renderBuild(build);
   await renderAlerts();
+  const board = await loadBoard();
+  renderBoard(board);
+  await renderSettingsPanel();
 }
 
 async function saveIntegrations() {
@@ -306,6 +309,87 @@ async function newProject() {
     body: JSON.stringify({ name }),
   });
   await refresh();
+}
+
+async function loadBoard() {
+  const res = await fetch("/api/dashboard/board");
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function loadSettings() {
+  const res = await fetch("/api/dashboard/settings");
+  if (!res.ok) return { settings: {} };
+  return res.json();
+}
+
+function renderBoard(data) {
+  const el = document.getElementById("board-columns");
+  if (!el || !data) return;
+  const cols = data.columns || [];
+  const cards = data.cards || {};
+  el.innerHTML = cols
+    .map(
+      (col) => `
+    <div class="board-col">
+      <div class="board-col-head">${esc(col.label)} (${(cards[col.id] || []).length})</div>
+      ${(cards[col.id] || [])
+        .map(
+          (c) => `
+        <div class="board-card" data-id="${esc(c.id)}">
+          <strong>${esc(c.title)}</strong>
+          <small>${esc(c.source_type)} · ${esc((c.labels || []).join(", "))}</small>
+          <div class="board-card-actions">
+            ${cols
+              .filter((x) => x.id !== col.id)
+              .slice(0, 3)
+              .map(
+                (x) =>
+                  `<button type="button" data-move="${esc(c.id)}" data-col="${esc(x.id)}">→ ${esc(x.label)}</button>`
+              )
+              .join("")}
+          </div>
+        </div>`
+        )
+        .join("")}
+    </div>`
+    )
+    .join("");
+  el.querySelectorAll("button[data-move]").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      moveBoardCard(btn.dataset.move, btn.dataset.col).catch((e) => alert(e.message))
+    );
+  });
+}
+
+async function moveBoardCard(cardId, column) {
+  await fetch(`/api/dashboard/board/cards/${cardId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ column }),
+  });
+  await refresh();
+}
+
+async function renderSettingsPanel() {
+  const { settings } = await loadSettings();
+  const mode = document.getElementById("gmail-mode");
+  const to = document.getElementById("gmail-to");
+  if (mode && settings.gmail_sync_mode) mode.value = settings.gmail_sync_mode;
+  if (to && settings.gmail_to) to.value = settings.gmail_to;
+}
+
+async function saveSettings() {
+  const res = await fetch("/api/dashboard/settings", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      gmail_sync_mode: document.getElementById("gmail-mode")?.value,
+      gmail_to: document.getElementById("gmail-to")?.value,
+    }),
+  });
+  if (!res.ok) throw new Error("Save failed");
+  flashStatus("Settings saved");
 }
 
 async function loadBuild() {
@@ -582,6 +666,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ["brief-company", "brief-focus"].forEach((id) => {
     document.getElementById(id)?.addEventListener("input", (e) => (e.target.dataset.touched = "1"));
   });
+  document.getElementById("btn-save-settings")?.addEventListener("click", () => saveSettings().catch((e) => alert(e.message)));
   document.getElementById("btn-sync-all")?.addEventListener("click", () => runSyncAll().catch((e) => alert(e.message)));
   document.getElementById("btn-ideate")?.addEventListener("click", () => runIdeate().catch((e) => alert(e.message)));
   document.getElementById("btn-approve")?.addEventListener("click", () => runApprove().catch((e) => alert(e.message)));

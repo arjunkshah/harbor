@@ -51,6 +51,21 @@ class HarborAgent:
         self.composio = get_composio(self.settings)
         self.nebius = get_nebius(self.settings)
 
+    def _board_context(self, project_id: Optional[str]) -> str:
+        if not project_id:
+            return "## Harbor Board\nNo active project."
+        from harbor.board import list_board
+
+        board = list_board(project_id)
+        lines = ["## Harbor Board"]
+        for col in board.get("columns", []):
+            cards = board.get("cards", {}).get(col["id"], [])
+            if cards:
+                lines.append(f"\n### {col['label']}")
+                for c in cards[:6]:
+                    lines.append(f"- {c.get('title', '')}")
+        return "\n".join(lines) if len(lines) > 1 else "## Harbor Board\nEmpty — ideate or approve a PRD."
+
     def _log(self, turns: List[TurnLog], turn: int, phase: str, detail: str, memory_stats=None):
         turns.append(TurnLog(turn=turn, phase=phase, detail=detail, memory_stats=memory_stats))
         logger.info("[%s] %s", phase, detail)
@@ -247,8 +262,12 @@ class HarborAgent:
         context_blocks = [
             research.to_context_block(),
             f"## Active project\n{project.get('name', 'My build')}: {project.get('focus', '')}",
+            self._board_context(project.get("id")),
             *composio_data.all_context_blocks(),
         ]
+        extra = self.composio.extra_toolkit_context()
+        if extra:
+            context_blocks.append(extra)
 
         if plan_only:
             user_prompt = (

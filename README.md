@@ -53,7 +53,7 @@ harbor serve
 |---------|-------------|
 | **`harbor setup`** | Interactive wizard — API keys → `.env` → checkpoint → Composio OAuth → doctor |
 | `harbor integrations list` | See enabled vs OAuth-connected integrations |
-| `harbor integrations set github,linear` | Choose which Composio apps Harbor uses |
+| `harbor integrations set github,gmail,notion` | Choose which Composio apps Harbor uses |
 | `harbor dashboard` | Open local workspace (starts server) |
 | `harbor serve` | Local server — dashboard + API (not GitHub Pages) |
 | `harbor run "…"` | General builder agent task |
@@ -62,7 +62,7 @@ harbor serve
 | **`harbor build approve`** | PRD + feature docs + queue Codex/Claude |
 | **`harbor build queue "…"`** | Queue custom coding prompt |
 | **`harbor build status --watch`** | Monitor queue + alerts |
-| **`harbor sync all`** | Push plans + PRD to Linear, GitHub, Slack, Gmail |
+| **`harbor sync all`** | Sync plans + PRD to Harbor Board + connected apps (GitHub, Notion, Slack, Gmail, …) |
 | **`harbor sync status`** | Ecosystem sync registry |
 | `harbor brief` | Morning brief workflow |
 | `harbor incident "…"` | Incident commander |
@@ -83,11 +83,12 @@ See **[docs/CREDITS.md](docs/CREDITS.md)** — register at [ship.builders](https
 
 ```
 User → Dashboard / CLI
+         → Harbor Board (kanban — primary planning surface)
          → Tavily (research)
-         → Composio (GitHub · Slack · Linear · Gmail)
+         → Composio (GitHub · Gmail · Slack · Notion · …)
          → SuperCompress (memory)
          → Nebius (inference + tools)
-         → Composio (Slack · Linear actions)
+         → Composio actions + Gmail sync (send by default)
          → .harbor/runs.json (history for dashboard)
 ```
 

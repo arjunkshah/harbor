@@ -41,7 +41,10 @@ ENV_FIELDS = [
         False,
         "",
     ),
-    ("LINEAR_TEAM_ID", "Optional: Linear team UUID (blank = your default team)", False, ""),
+    ("LINEAR_TEAM_ID", "Optional: Linear team UUID (only if linear in COMPOSIO_TOOLKITS)", False, ""),
+    ("HARBOR_GMAIL_SYNC_MODE", "Gmail sync: send (auto-send) or draft", False, "send"),
+    ("HARBOR_GMAIL_TO", "Gmail recipient for Harbor updates", False, "me"),
+    ("HARBOR_AUTO_SYNC", "Auto-sync plans/PRD to board + connected apps (1/0)", False, "1"),
 ]
 
 

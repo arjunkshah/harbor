@@ -275,7 +275,7 @@ def integrations_cmd(
 
 @app.command("connect")
 def connect(
-    toolkit: str = typer.Argument(..., help="github | slack | linear | gmail"),
+    toolkit: str = typer.Argument(..., help="github | gmail | slack | notion | discord | …"),
     open_browser: bool = typer.Option(True, "--open/--no-open", help="Open OAuth link in browser"),
 ) -> None:
     """Open Composio OAuth to connect GitHub, Slack, Linear, or Gmail."""

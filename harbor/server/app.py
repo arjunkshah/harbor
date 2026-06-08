@@ -409,7 +409,52 @@ def dashboard_sync_run() -> Dict[str, Any]:
     try:
         return sync_project_ecosystem()
     except ValueError as exc:
-        raise HTTPException(400, str(exc)) from exc
+        raise HTTPException(404, str(exc)) from exc
+
+
+class SettingsBody(BaseModel):
+    gmail_sync_mode: Optional[str] = None
+    gmail_to: Optional[str] = None
+    auto_sync: Optional[bool] = None
+    coding_agent: Optional[str] = None
+
+
+@app.get("/api/dashboard/settings")
+def dashboard_settings_get() -> Dict[str, Any]:
+    from harbor.user_settings import get_user_settings
+
+    return {"settings": get_user_settings()}
+
+
+@app.put("/api/dashboard/settings")
+def dashboard_settings_put(body: SettingsBody) -> Dict[str, Any]:
+    from harbor.user_settings import update_settings
+
+    fields = {k: v for k, v in body.model_dump().items() if v is not None}
+    return {"settings": update_settings(**fields)}
+
+
+class BoardMoveBody(BaseModel):
+    column: str
+
+
+@app.get("/api/dashboard/board")
+def dashboard_board() -> Dict[str, Any]:
+    from harbor.board import list_board
+
+    active = get_active_project()
+    pid = active.get("id") if active else None
+    return list_board(pid)
+
+
+@app.patch("/api/dashboard/board/cards/{card_id}")
+def dashboard_board_move(card_id: str, body: BoardMoveBody) -> Dict[str, Any]:
+    from harbor.board import move_card
+
+    card = move_card(card_id, body.column)
+    if not card:
+        raise HTTPException(404, "Card or column not found")
+    return {"card": card}
 
 
 # --- Legacy / OpenClaw ---

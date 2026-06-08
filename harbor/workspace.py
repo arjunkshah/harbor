@@ -230,11 +230,11 @@ def workspace_overview(*, connected: Optional[Dict[str, bool]] = None) -> Dict[s
         "stats": stats(),
         "recent_runs": project_runs or runs[:3],
         "differentiators": [
-            "Harbor Engine — Tavily → Composio → SuperCompress → Nebius → actions in one loop",
-            "Ecosystem sync — plans & PRDs push to Linear, GitHub, Slack, Gmail automatically",
-            "Build pipeline — ideate → PRD → queue Codex / Claude / OpenCode → notify when done",
-            "Persistent .harbor/ workspace + docs/harbor/ in your repo",
-            "OpenClaw is an optional runtime bridge — Harbor owns orchestration + memory",
+            "Harbor Board — native kanban replaces Linear for planning",
+            "12+ Composio toolkits — GitHub, Gmail, Notion, Discord, Jira, and more",
+            "Ecosystem sync — board + GitHub + Slack + auto-send Gmail (configurable)",
+            "Build pipeline — ideate → PRD → Codex / Claude / OpenCode queue",
+            "Harbor Engine — Tavily → Composio → SuperCompress → Nebius",
         ],
     }
 

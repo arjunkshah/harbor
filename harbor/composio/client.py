@@ -333,6 +333,27 @@ class ComposioHub:
         gm = self.gather_gmail() if "gmail" in use and (not connected or "gmail" in connected) else GmailSnapshot()
         return ComposioGatherResult(github=gh, linear=lin, gmail=gm, raw_actions=raw)
 
+    def extra_toolkit_context(self) -> str:
+        """Lightweight context for optional connected toolkits."""
+        connected = self.connected_toolkits()
+        use = set(self.settings.active_toolkits())
+        labels = {
+            "notion": "Notion",
+            "googlecalendar": "Google Calendar",
+            "googlesheets": "Google Sheets",
+            "googledrive": "Google Drive",
+            "discord": "Discord",
+            "trello": "Trello",
+            "jira": "Jira",
+            "airtable": "Airtable",
+            "asana": "Asana",
+            "slack": "Slack",
+        }
+        active = [labels[s] for s in labels if s in use and s in connected]
+        if not active:
+            return ""
+        return "## Connected toolkits\n" + ", ".join(active) + " — agent tools available via Composio."
+
     def slack_delivery_ready(self) -> bool:
         if not self.settings.wants_toolkit("slack"):
             return False
@@ -445,6 +466,36 @@ class ComposioHub:
             "GMAIL_CREATE_EMAIL_DRAFT",
             {"recipient": to, "subject": subject, "body": body},
         )
+
+    def send_gmail(
+        self,
+        subject: str,
+        body: str,
+        *,
+        to: Optional[str] = None,
+    ) -> ComposioActionResult:
+        recipient = to or self.settings.harbor_gmail_to or "me"
+        return self.execute(
+            "GMAIL_SEND_EMAIL",
+            {"recipient_email": recipient, "subject": subject, "body": body},
+        )
+
+    def sync_gmail_message(self, subject: str, body: str, *, to: Optional[str] = None) -> ComposioActionResult:
+        if self.settings.gmail_sends_immediately():
+            return self.send_gmail(subject, body, to=to)
+        return self.create_gmail_draft(subject, body, to=to or self.settings.harbor_gmail_to)
+
+    def create_notion_page(self, title: str, content: str) -> ComposioActionResult:
+        return self.execute(
+            "NOTION_CREATE_NOTION_PAGE",
+            {"title": title, "content": content},
+        )
+
+    def post_discord_message(self, content: str, *, channel_id: Optional[str] = None) -> ComposioActionResult:
+        args: Dict[str, Any] = {"content": content[:2000]}
+        if channel_id:
+            args["channel_id"] = channel_id
+        return self.execute("DISCORD_SEND_MESSAGE", args)
 
     def draft_gmail_reply(self, thread_id: str, body: str) -> ComposioActionResult:
         return self.execute(
@@ -644,6 +695,20 @@ class DemoComposioHub(ComposioHub):
 
     def create_gmail_draft(self, subject: str, body: str, *, to: str = "me") -> ComposioActionResult:
         return self.execute("GMAIL_CREATE_EMAIL_DRAFT", {"recipient": to, "subject": subject, "body": body})
+
+    def send_gmail(self, subject: str, body: str, *, to: Optional[str] = None) -> ComposioActionResult:
+        return self.execute("GMAIL_SEND_EMAIL", {"recipient_email": to or "me", "subject": subject, "body": body})
+
+    def sync_gmail_message(self, subject: str, body: str, *, to: Optional[str] = None) -> ComposioActionResult:
+        if self.settings.gmail_sends_immediately():
+            return self.send_gmail(subject, body, to=to)
+        return self.create_gmail_draft(subject, body, to=to or "me")
+
+    def create_notion_page(self, title: str, content: str) -> ComposioActionResult:
+        return self.execute("NOTION_CREATE_NOTION_PAGE", {"title": title, "content": content})
+
+    def post_discord_message(self, content: str, *, channel_id: Optional[str] = None) -> ComposioActionResult:
+        return self.execute("DISCORD_SEND_MESSAGE", {"content": content, "channel_id": channel_id or ""})
 
     def auth_connect(self, toolkit: str) -> ConnectResult:
         slug = toolkit.lower().strip()
