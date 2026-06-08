@@ -7,10 +7,9 @@ function injectNav(active) {
 
   if (site === "local") {
     el.innerHTML = `
-      <a href="/dashboard"${active === "dashboard" ? ' class="active"' : ""}>Dashboard</a>
+      <a href="/dashboard">Dashboard</a>
       <a href="/docs">Docs</a>
       <a href="https://github.com/arjunkshah/harbor" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://arjunkshah.github.io/harbor/" target="_blank" rel="noopener" class="btn btn-ghost" style="padding:8px 16px;font-size:0.85rem">Project site</a>
     `;
     return;
   }
@@ -20,7 +19,7 @@ function injectNav(active) {
     <a href="${u("index.html")}"${active === "home" ? ' class="active"' : ""}>Home</a>
     <a href="${u("docs.html")}"${active === "docs" ? ' class="active"' : ""}>Docs</a>
     <a href="https://github.com/arjunkshah/harbor" target="_blank" rel="noopener">GitHub</a>
-    <a href="${u("index.html")}#start" class="btn btn-primary" style="padding:8px 16px;font-size:0.85rem">Install</a>
+    <a href="${u("index.html")}#install" class="site-nav-cta">Install</a>
   `;
 }
 

@@ -1,16 +1,18 @@
 const TERMINAL_LINES = [
-  { cls: "t-dim", text: "$ harbor setup" },
-  { cls: "t-ok", text: "✓ API keys saved to .env" },
-  { cls: "t-ok", text: "✓ GitHub connected (whole account)" },
-  { cls: "t-dim", text: "" },
-  { cls: "t-prompt", text: "$ harbor brief" },
-  { cls: "t-dim", text: "  tavily    Market research + company intel" },
-  { cls: "t-dim", text: "  composio  GitHub · Linear · Gmail gather" },
-  { cls: "t-warn", text: "  memory    SuperCompress 1150→402 tokens (65% KV saved)" },
-  { cls: "t-dim", text: "  nebius    Inference + tool loop" },
-  { cls: "t-ok", text: "  brief     → .harbor/briefs/latest.md" },
-  { cls: "t-dim", text: "" },
-  { cls: "t-prompt", text: "Brief ready. ☕ Go build." },
+  { cls: "dim", text: "$ harbor setup" },
+  { cls: "ok", text: "✓ github · linear · gmail connected" },
+  { cls: "dim", text: "" },
+  { cls: "cmd", text: "$ harbor run \"triage open PRs\"" },
+  { cls: "dim", text: "  tavily    competitor + docs search" },
+  { cls: "dim", text: "  composio  12 PRs across your account" },
+  { cls: "accent", text: "  memory    SuperCompress 62% KV saved" },
+  { cls: "dim", text: "  nebius    3 tool calls → 2 actions" },
+  { cls: "ok", text: "  saved     .harbor/runs/ + summary" },
+  { cls: "dim", text: "" },
+  { cls: "cmd", text: "$ harbor run \"plan auth flow\" --plan" },
+  { cls: "ok", text: "  plan      → .harbor/plans.json (5 tasks)" },
+  { cls: "dim", text: "" },
+  { cls: "accent", text: "harbor serve → localhost:8787/dashboard" },
 ];
 
 function animateTerminal() {
@@ -18,14 +20,15 @@ function animateTerminal() {
   if (!body) return;
   body.innerHTML = "";
   let delay = 0;
-  TERMINAL_LINES.forEach((line) => {
+  TERMINAL_LINES.forEach((line, i) => {
     setTimeout(() => {
       const div = document.createElement("div");
-      div.className = `t-line ${line.cls}`;
+      div.className = `term-line ${line.cls}`;
       div.textContent = line.text || "\u00A0";
+      div.style.animationDelay = "0ms";
       body.appendChild(div);
     }, delay);
-    delay += line.text ? 180 : 80;
+    delay += line.text ? 160 : 60;
   });
 }
 
@@ -34,37 +37,21 @@ function setHealthLabel() {
   if (!el) return;
   if (window.HARBOR_PUBLIC_SITE) {
     el.textContent = "open source · BuilderShip 2026";
-    el.style.color = "#8ba3b8";
     return;
   }
   fetch("/health")
     .then((res) => res.json())
     .then((data) => {
       const live = data.integrations?.nebius && data.integrations?.composio && data.integrations?.tavily;
-      el.textContent = data.demo_mode
-        ? "demo mode — run harbor setup for live keys"
-        : live
-          ? "live stack connected"
-          : "partial — check .env keys";
-      el.style.color = live && !data.demo_mode ? "#28c840" : "#8ba3b8";
+      el.textContent = data.demo_mode ? "demo mode" : live ? "live stack" : "needs setup";
     })
     .catch(() => {
-      el.textContent = "project site — install locally to run";
+      el.textContent = "project site — install locally";
     });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   animateTerminal();
   setHealthLabel();
-  setInterval(animateTerminal, 12000);
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((e) => {
-        if (e.isIntersecting) e.target.classList.add("visible");
-      });
-    },
-    { threshold: 0.1 }
-  );
-  document.querySelectorAll(".card, .stat, .pipe-step").forEach((el) => observer.observe(el));
+  setInterval(animateTerminal, 14000);
 });

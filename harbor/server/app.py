@@ -25,7 +25,7 @@ from harbor.workspace import (
     set_enabled_toolkits,
     workspace_overview,
 )
-from harbor.workflows import run_incident_commander, run_morning_brief
+from harbor.workflows import run_builder_task, run_incident_commander, run_morning_brief
 
 WEB_DIR = Path(__file__).resolve().parent.parent.parent / "web"
 LOCAL_DIR = Path(__file__).resolve().parent.parent.parent / "local"
@@ -231,6 +231,48 @@ def dashboard_incident(body: IncidentBody) -> Dict[str, Any]:
         "actions": r.actions_taken,
         "turns": [{"phase": t.phase, "detail": t.detail} for t in r.turns],
     }
+
+
+class AgentBody(BaseModel):
+    query: str
+    plan_only: bool = False
+
+
+@app.post("/api/dashboard/agent")
+def dashboard_agent(body: AgentBody) -> Dict[str, Any]:
+    out = run_builder_task(body.query, plan_only=body.plan_only)
+    r = out.result
+    runs = list_runs(1)
+    payload: Dict[str, Any] = {
+        "run_id": runs[0]["id"] if runs else None,
+        "summary": r.summary,
+        "memory_savings_pct": r.memory_savings_pct,
+        "actions": r.actions_taken,
+        "turns": [{"phase": t.phase, "detail": t.detail} for t in r.turns],
+        "plan_only": body.plan_only,
+    }
+    if body.plan_only and runs and runs[0].get("meta", {}).get("plan_id"):
+        payload["plan_id"] = runs[0]["meta"]["plan_id"]
+    return payload
+
+
+@app.get("/api/dashboard/plans")
+def dashboard_plans() -> Dict[str, Any]:
+    from harbor.plans import list_plans
+
+    active = get_active_project()
+    pid = active.get("id") if active else None
+    return {"plans": list_plans(project_id=pid)}
+
+
+@app.patch("/api/dashboard/plans/{plan_id}/tasks/{task_index}")
+def dashboard_plan_toggle(plan_id: str, task_index: int) -> Dict[str, Any]:
+    from harbor.plans import toggle_task
+
+    plan = toggle_task(plan_id, task_index)
+    if not plan:
+        raise HTTPException(404, "Plan or task not found")
+    return {"plan": plan}
 
 
 # --- Legacy / OpenClaw ---

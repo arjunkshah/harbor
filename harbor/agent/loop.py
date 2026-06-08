@@ -7,7 +7,12 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from harbor.agent.prompts import INCIDENT_COMMANDER_SYSTEM, MORNING_BRIEF_SYSTEM
+from harbor.agent.prompts import (
+    BUILDER_PLAN_SYSTEM,
+    BUILDER_TASK_SYSTEM,
+    INCIDENT_COMMANDER_SYSTEM,
+    MORNING_BRIEF_SYSTEM,
+)
 from harbor.composio import get_composio
 from harbor.config import Settings, get_settings
 from harbor.integrations import incident_instructions, morning_brief_instructions
@@ -226,3 +231,42 @@ class HarborAgent:
             [tavily_status.to_context_block(), *composio_data.all_context_blocks()],
             workflow="incident_commander",
         )
+
+    def builder_task(self, query: str, *, plan_only: bool = False) -> AgentRunResult:
+        """General builder workspace agent — plan or execute."""
+        from harbor.workspace import get_active_project
+
+        project = get_active_project() or {}
+        composio_data = self.composio.gather_all()
+        status = self.composio.integration_status()
+
+        research = self.tavily.search_and_answer(
+            f"{query} — latest tools and patterns for AI builders 2026"
+        )
+
+        context_blocks = [
+            research.to_context_block(),
+            f"## Active project\n{project.get('name', 'My build')}: {project.get('focus', '')}",
+            *composio_data.all_context_blocks(),
+        ]
+
+        if plan_only:
+            user_prompt = (
+                f"Plan for: {query}\n\n"
+                f"Project: {project.get('name', 'My build')}\n"
+                "Return title, goal, and numbered tasks only."
+            )
+            system = BUILDER_PLAN_SYSTEM
+            workflow = "builder_plan"
+        else:
+            enabled = [k for k, v in status.items() if v]
+            user_prompt = (
+                f"Task: {query}\n\n"
+                f"Project: {project.get('name', 'My build')}\n"
+                f"Connected integrations: {', '.join(enabled) or 'none yet'}\n\n"
+                "Execute using available tools. Summarize what you did and next steps."
+            )
+            system = BUILDER_TASK_SYSTEM
+            workflow = "builder_task"
+
+        return self.run_with_tools(system, user_prompt, context_blocks, workflow=workflow)

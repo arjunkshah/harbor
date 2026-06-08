@@ -16,11 +16,11 @@ from rich.panel import Panel
 from harbor.config import get_settings
 from harbor.doctor import run_doctor
 from harbor.setup import run_setup
-from harbor.workflows import run_incident_commander, run_morning_brief
+from harbor.workflows import run_builder_task, run_incident_commander, run_morning_brief
 
 app = typer.Typer(
     name="harbor",
-    help="Harbor — builder ops agent (OpenClaw + Composio + Tavily + Nebius + SuperCompress)",
+    help="Harbor — builder workspace for AI-native developers (connect · plan · ship)",
     no_args_is_help=True,
 )
 console = Console()
@@ -70,6 +70,19 @@ def morning_brief(
     """Run the full morning brief workflow across the entire stack."""
     console.print("[bold cyan]Harbor Morning Brief[/bold cyan] — gathering + compressing + acting\n")
     out = run_morning_brief(company=company, focus=focus)
+    _print_workflow_output(out, json_out)
+
+
+@app.command("run")
+def run_task(
+    query: str = typer.Argument(..., help="Builder task for Harbor agent"),
+    plan: bool = typer.Option(False, "--plan", help="Plan only — saves to .harbor/plans.json"),
+    json_out: bool = typer.Option(False, "--json", help="Emit JSON result"),
+) -> None:
+    """Run a general builder task — connect, plan, act across your stack."""
+    label = "Harbor Plan" if plan else "Harbor Run"
+    console.print(f"[bold cyan]{label}[/bold cyan] — {query}\n")
+    out = run_builder_task(query, plan_only=plan)
     _print_workflow_output(out, json_out)
 
 

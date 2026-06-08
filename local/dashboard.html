@@ -6,127 +6,157 @@
   <title>Harbor — Builder workspace</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/local/assets/css/workspace.css" />
 </head>
-<body data-page="dashboard" data-site="local">
-  <div class="noise"></div>
-  <div class="glow-orb glow-orb--1"></div>
-  <div class="glow-orb glow-orb--2"></div>
-
-  <nav class="nav">
-    <div class="container nav-inner">
-      <a href="/dashboard" class="logo">⚓ Harbor</a>
-      <div class="nav-links" id="nav-links"></div>
+<body class="workspace">
+  <aside class="ws-sidebar">
+    <div class="ws-brand">
+      Harbor
+      <strong>Builder workspace</strong>
     </div>
-  </nav>
+    <nav class="ws-nav" id="ws-nav">
+      <button type="button" data-view="overview" class="active">Overview</button>
+      <button type="button" data-view="connect">Connect</button>
+      <button type="button" data-view="projects">Projects</button>
+      <button type="button" data-view="agent">Agent</button>
+      <button type="button" data-view="plans">Plans</button>
+      <button type="button" data-view="history">History</button>
+    </nav>
+    <div class="ws-sidebar-foot">
+      <span id="sidebar-status">checking…</span>
+      <a href="/docs">Docs</a>
+      <a href="https://github.com/arjunkshah/harbor" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://arjunkshah.github.io/harbor/" target="_blank" rel="noopener">Project site</a>
+    </div>
+  </aside>
 
-  <main class="container">
+  <main class="ws-main">
     <div id="setup-banner"></div>
 
-    <header class="dashboard-header">
-      <div>
-        <p class="section-label" style="margin-bottom:8px">Builder workspace · <span id="health-status">checking…</span></p>
-        <h1>Harbor</h1>
-        <p style="color:var(--text-muted);font-size:0.95rem;margin-top:8px" id="workspace-tagline">
-          Centralized agent for vibe coders — projects, integrations, prompts, progress.
-        </p>
+    <!-- Overview -->
+    <section class="ws-view active" id="view-overview">
+      <header class="ws-header">
+        <p class="ws-status" id="health-status">Harbor Engine</p>
+        <h1 id="workspace-tagline">The workspace for AI builders</h1>
+        <p>Connect your stack, plan what to ship, run agents that work — with memory that persists in <code>.harbor/</code>.</p>
+      </header>
+      <div class="diff-box">
+        <p class="ws-panel-title" style="margin-bottom:12px">Why Harbor (not just OpenClaw)</p>
+        <ul id="diff-list"></ul>
       </div>
-      <button type="button" class="btn btn-ghost" id="btn-refresh">Refresh</button>
-    </header>
+      <div class="ws-stats">
+        <div class="ws-stat"><div class="ws-stat-val" id="stat-runs">0</div><div class="ws-stat-label">Total runs</div></div>
+        <div class="ws-stat"><div class="ws-stat-val" id="stat-kv">0%</div><div class="ws-stat-label">Avg KV saved</div></div>
+        <div class="ws-stat"><div class="ws-stat-val" id="stat-integrations">0</div><div class="ws-stat-label">Integrations on</div></div>
+        <div class="ws-stat"><div class="ws-stat-val" id="stat-connected">0</div><div class="ws-stat-label">OAuth linked</div></div>
+      </div>
+      <div class="ws-panel">
+        <div class="ws-panel-head">
+          <span class="ws-panel-title">Stack health</span>
+          <button type="button" class="ws-btn" id="btn-refresh">Refresh</button>
+        </div>
+        <div id="status-checks"></div>
+      </div>
+    </section>
 
-    <div class="workspace-bar">
-      <label style="font-size:0.85rem;color:var(--text-muted)">Project</label>
-      <select id="project-select" aria-label="Active project"></select>
-      <button type="button" class="btn btn-ghost" id="btn-new-project" style="padding:8px 14px;font-size:0.85rem">+ New</button>
-      <span style="flex:1"></span>
-      <span id="project-meta" style="font-size:0.82rem;color:var(--text-muted)"></span>
-    </div>
+    <!-- Connect -->
+    <section class="ws-view" id="view-connect">
+      <header class="ws-header">
+        <h1>Connect</h1>
+        <p>Choose which apps Harbor uses. OAuth-link each one. GitHub-only is enough to start.</p>
+      </header>
+      <div class="ws-panel">
+        <div id="integrations-panel"></div>
+        <button type="button" class="ws-btn ws-btn-primary ws-btn-block" id="btn-save-integrations">Save integration choices</button>
+      </div>
+    </section>
 
-    <div class="panel" style="margin-top:16px">
-      <div class="panel-title">Why Harbor (not just one OpenClaw prompt)</div>
-      <ul class="diff-list" id="diff-list"></ul>
-    </div>
+    <!-- Projects -->
+    <section class="ws-view" id="view-projects">
+      <header class="ws-header">
+        <h1>Projects</h1>
+        <p>What you're building. Briefs, runs, and plans tie to the active project.</p>
+      </header>
+      <div class="ws-panel">
+        <label class="ws-label">Active project</label>
+        <select class="ws-select" id="project-select"></select>
+        <button type="button" class="ws-btn" id="btn-new-project">+ New project</button>
+        <p id="project-meta" style="margin-top:16px;font-size:0.85rem;color:var(--text-muted)"></p>
+      </div>
+    </section>
 
-    <div class="stats" style="margin-top:0;margin-bottom:24px">
-      <div class="stat"><div class="stat-value" id="stat-runs">0</div><div class="stat-label">Total runs</div></div>
-      <div class="stat"><div class="stat-value" id="stat-kv">0%</div><div class="stat-label">Avg KV saved</div></div>
-      <div class="stat"><div class="stat-value" id="stat-integrations">0</div><div class="stat-label">Integrations on</div></div>
-      <div class="stat"><div class="stat-value" id="stat-connected">0</div><div class="stat-label">OAuth linked</div></div>
-    </div>
-
-    <div class="dashboard-grid">
-      <div>
-        <div class="panel">
-          <div class="panel-title">Progress · run history</div>
-          <div class="run-list" id="run-list">
-            <div class="empty-state"><span class="spinner"></span><p style="margin-top:12px">Loading…</p></div>
+    <!-- Agent -->
+    <section class="ws-view" id="view-agent">
+      <header class="ws-header">
+        <h1>Agent</h1>
+        <p>Run builder tasks, morning briefs, or incidents. Harbor gathers → compresses → acts.</p>
+      </header>
+      <div class="ws-grid">
+        <div>
+          <div class="ws-panel">
+            <span class="ws-panel-title">Builder task</span>
+            <label class="ws-label" for="agent-query">What should Harbor do?</label>
+            <textarea class="ws-textarea" id="agent-query" placeholder="Triage my open PRs and draft a ship plan…"></textarea>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button type="button" class="ws-btn ws-btn-primary" id="btn-agent-run">Run task</button>
+              <button type="button" class="ws-btn" id="btn-agent-plan">Plan only</button>
+            </div>
+          </div>
+          <div class="ws-panel">
+            <span class="ws-panel-title">Morning brief</span>
+            <label class="ws-label" for="brief-company">Company intel</label>
+            <input class="ws-input" id="brief-company" type="text" value="Composio" />
+            <label class="ws-label" for="brief-focus">Research focus</label>
+            <input class="ws-input" id="brief-focus" type="text" value="AI agent infrastructure" />
+            <button type="button" class="ws-btn ws-btn-primary ws-btn-block" id="btn-brief">Run brief</button>
           </div>
         </div>
-        <div class="panel detail-view" id="run-detail">
-          <div class="empty-state"><p>Select a run — view summary, turns, and agent prompts used</p></div>
+        <div>
+          <div class="ws-panel">
+            <span class="ws-panel-title">Incident commander</span>
+            <label class="ws-label" for="incident-query">Incident</label>
+            <textarea class="ws-textarea" id="incident-query" placeholder="API latency spike…"></textarea>
+            <label class="ws-label" for="incident-service">Service</label>
+            <input class="ws-input" id="incident-service" type="text" value="production API" />
+            <button type="button" class="ws-btn ws-btn-block" id="btn-incident">Run incident</button>
+          </div>
+          <div class="ws-panel">
+            <span class="ws-panel-title">Agent prompts</span>
+            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">System + dynamic task (changes when integrations toggle).</p>
+            <div id="prompts-panel"></div>
+          </div>
         </div>
       </div>
+      <p id="run-status" style="text-align:center;font-size:0.85rem;color:var(--accent);min-height:24px;margin-top:12px"></p>
+    </section>
 
-      <aside>
-        <div class="panel">
-          <div class="panel-title">Integrations · choose what you use</div>
-          <div id="integrations-panel"></div>
-          <button type="button" class="btn btn-primary btn-block" id="btn-save-integrations">Save integration choices</button>
+    <!-- Plans -->
+    <section class="ws-view" id="view-plans">
+      <header class="ws-header">
+        <h1>Plans</h1>
+        <p>Agent-generated roadmaps. Check off tasks as you ship.</p>
+      </header>
+      <div id="plans-panel"><div class="empty">No plans yet — use Agent → Plan only</div></div>
+    </section>
+
+    <!-- History -->
+    <section class="ws-view" id="view-history">
+      <header class="ws-header">
+        <h1>History</h1>
+        <p>Run log with summaries, KV savings, and turn traces.</p>
+      </header>
+      <div class="ws-grid">
+        <div class="ws-panel">
+          <div id="run-list"><div class="empty">Loading…</div></div>
         </div>
-
-        <div class="panel">
-          <div class="panel-title">Agent prompts</div>
-          <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">Harbor's system + dynamic task prompts (change when you toggle integrations).</p>
-          <div id="prompts-panel"></div>
+        <div class="ws-panel" id="run-detail">
+          <div class="empty">Select a run</div>
         </div>
-
-        <div class="panel">
-          <div class="panel-title">Stack health</div>
-          <div class="status-grid" id="status-checks"></div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-title">Morning brief</div>
-          <div class="form-row">
-            <label for="brief-company">Company intel</label>
-            <input id="brief-company" type="text" value="Composio" />
-          </div>
-          <div class="form-row">
-            <label for="brief-focus">Research focus</label>
-            <input id="brief-focus" type="text" value="AI agent infrastructure" />
-          </div>
-          <button type="button" class="btn btn-primary btn-block" id="btn-brief">Run for active project</button>
-        </div>
-
-        <div class="panel">
-          <div class="panel-title">Incident commander</div>
-          <div class="form-row">
-            <label for="incident-query">Incident</label>
-            <textarea id="incident-query" placeholder="API latency spike…"></textarea>
-          </div>
-          <div class="form-row">
-            <label for="incident-service">Service</label>
-            <input id="incident-service" type="text" value="production API" />
-          </div>
-          <button type="button" class="btn btn-ghost btn-block" id="btn-incident" style="border-color:var(--sunset);color:var(--sunset)">Run incident</button>
-        </div>
-
-        <p id="run-status" style="text-align:center;font-size:0.85rem;color:var(--water-glow);min-height:24px"></p>
-      </aside>
-    </div>
+      </div>
+    </section>
   </main>
 
-  <footer>
-    <div class="container">
-      <a href="/docs">Docs</a>
-      <a href="https://github.com/arjunkshah/harbor">GitHub</a>
-      <a href="https://arjunkshah.github.io/harbor/">Project site</a>
-      <p style="margin-top:12px">Local workspace · <code>harbor serve</code></p>
-    </div>
-  </footer>
-  <script src="/assets/js/config.js"></script>
-  <script src="/assets/js/shared.js"></script>
   <script src="/local/assets/js/dashboard.js"></script>
 </body>
 </html>

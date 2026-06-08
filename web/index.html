@@ -3,176 +3,233 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Harbor — Builder ops agent</title>
-  <meta name="description" content="Autonomous morning briefs for indie hackers. Tavily + Composio + Nebius + SuperCompress. Open source." />
+  <title>Harbor — Workspace for AI builders</title>
+  <meta name="description" content="Connect your stack. Plan what to ship. Run agents that work — not chatbots that talk. Harbor is the builder control plane." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/site.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚓</text></svg>" />
 </head>
-<body data-page="home" data-site="public">
-  <div class="noise"></div>
-  <div class="glow-orb glow-orb--1"></div>
-  <div class="glow-orb glow-orb--2"></div>
+<body class="site" data-page="home" data-site="public">
+  <div class="site-grain"></div>
+  <div class="site-glow site-glow--a"></div>
+  <div class="site-glow site-glow--b"></div>
 
-  <nav class="nav">
-    <div class="container nav-inner">
-      <a href="index.html" class="logo">
-        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
-          <circle cx="16" cy="16" r="14" stroke="#2dd4bf" stroke-width="2"/>
-          <path d="M16 6v20M10 12h12M8 20c2 2 4 3 8 3s6-1 8-3" stroke="#2dd4bf" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        Harbor
-      </a>
-      <div class="nav-links" id="nav-links"></div>
+  <nav class="site-nav">
+    <div class="container site-nav-inner">
+      <a href="index.html" class="site-logo">Harbor <strong>workspace</strong></a>
+      <div class="site-nav-links" id="nav-links"></div>
     </div>
   </nav>
 
-  <main class="container">
-    <section class="hero">
-      <div>
-        <div class="badge">
-          <span class="badge-dot"></span>
-          BuilderShip · Open source · <span id="health-status">indie-hacker friendly</span>
-        </div>
-        <h1>Your morning brief.<br /><em>One command. Your whole stack.</em></h1>
-        <p class="hero-lead">
-          Harbor pulls GitHub, Linear, and Gmail — researches the web with Tavily — compresses context so agents don’t forget — then writes your brief. Built for solo founders, not enterprise teams.
+  <main>
+    <section class="container hero-layout site-hero">
+      <div class="site-hero-copy">
+        <p class="site-eyebrow">01 · Builder control plane</p>
+        <h1>Chatbots talk.<br /><em>Harbor works.</em></h1>
+        <p class="site-lead">
+          A local workspace for vibe coders. Connect GitHub, Linear, Gmail.
+          Plan your next ship. Run agents that gather live context, compress memory,
+          take action — and remember everything in <code>.harbor/</code>.
         </p>
-        <div class="hero-cta">
-          <a href="#start" class="btn btn-primary">Install →</a>
-          <a href="docs.html" class="btn btn-ghost">Read docs</a>
-          <a href="https://github.com/arjunkshah/harbor" class="btn btn-ghost" target="_blank" rel="noopener">GitHub</a>
+        <div class="site-hero-actions">
+          <a href="#install" class="btn btn-fill">Install locally</a>
+          <a href="docs.html" class="btn btn-line">Documentation</a>
+          <a href="https://github.com/arjunkshah/harbor" class="btn btn-line" target="_blank" rel="noopener">GitHub</a>
         </div>
-        <p style="margin-top:16px;font-size:0.88rem;color:var(--text-muted)">
-          Need the local dashboard (integrations, run history)? Run <code style="font-family:var(--mono);color:var(--water-glow)">harbor serve</code> — not on this site.
-        </p>
+        <div class="site-proof">
+          <span id="health-status">open source · BuilderShip 2026</span>
+          <span>5-sponsor orchestration</span>
+          <span>not a wrapper</span>
+        </div>
       </div>
-      <div class="terminal">
-        <div class="terminal-bar">
-          <span class="terminal-dot terminal-dot--r"></span>
-          <span class="terminal-dot terminal-dot--y"></span>
-          <span class="terminal-dot terminal-dot--g"></span>
-          <span class="terminal-title">harbor — zsh</span>
+      <div class="term" aria-hidden="true">
+        <div class="term-bar">
+          <span class="term-dot term-dot--r"></span>
+          <span class="term-dot term-dot--y"></span>
+          <span class="term-dot term-dot--g"></span>
+          <span class="term-title">harbor — workspace</span>
         </div>
-        <div class="terminal-body" id="terminal-body"></div>
+        <div class="term-body" id="terminal-body"></div>
       </div>
     </section>
 
-    <section id="what">
-      <p class="section-label">What it is</p>
-      <h2 class="section-title">A builder-ops agent in your terminal</h2>
-      <p class="section-desc">
-        Harbor is an open-source CLI that runs autonomous workflows across the BuilderShip sponsor stack. Connect your GitHub account once, add API keys, run <code style="font-family:var(--mono)">harbor brief</code>, and get a synthesized digest of what needs your attention — plus optional follow-up actions.
+    <section class="container site-section">
+      <p class="section-num"><span>02</span> · The split</p>
+      <div class="split-headline">
+        <blockquote>OpenClaw and Hermes give you <strong>a runtime</strong> — a place for agents to live.</blockquote>
+        <blockquote>Harbor gives you <strong>a control plane</strong> — connect, plan, run, persist.</blockquote>
+      </div>
+      <p class="poetic">You don't need another chat window. You need a <em>harbor</em> — somewhere your builder loop docks, loads context, and ships.</p>
+      <p class="section-body" style="margin-bottom:0">
+        Harbor orchestrates five sponsors into one proprietary loop. OpenClaw can host the runtime;
+        Harbor owns the memory, integrations, workspace state, and multi-step workflows.
       </p>
     </section>
 
-    <section id="how">
-      <p class="section-label">How it works</p>
-      <h2 class="section-title">Gather → compress → think → act</h2>
-      <p class="section-desc">Every workflow runs the same agent loop — not a single API call.</p>
-      <div class="pipeline">
-        <div class="pipe-step"><strong>Tavily</strong><span>Web research & intel</span></div>
-        <span class="pipe-arrow">→</span>
-        <div class="pipe-step"><strong>Composio</strong><span>GitHub · Linear · Gmail</span></div>
-        <span class="pipe-arrow">→</span>
-        <div class="pipe-step"><strong>SuperCompress</strong><span>Trim context (~35%)</span></div>
-        <span class="pipe-arrow">→</span>
-        <div class="pipe-step"><strong>Nebius</strong><span>Token Factory inference</span></div>
-        <span class="pipe-arrow">→</span>
-        <div class="pipe-step"><strong>Output</strong><span>Terminal + file + optional actions</span></div>
+    <section class="container site-section" id="why">
+      <p class="section-num"><span>03</span> · Why Harbor is different</p>
+      <h2>Not a chatbot. Not a cron job. Not a demo.</h2>
+      <p class="section-body">What already exists vs what Harbor adds.</p>
+      <div class="compare-grid">
+        <div class="compare-col">
+          <h3>OpenClaw / Hermes</h3>
+          <ul>
+            <li>Agent runtime &amp; messaging gateway</li>
+            <li>You wire tools and prompts yourself</li>
+            <li>Memory is your problem</li>
+            <li>No project workspace or run history</li>
+            <li>Great for hosting — not for builder ops</li>
+          </ul>
+        </div>
+        <div class="compare-col highlight">
+          <h3>Harbor</h3>
+          <ul>
+            <li>Pre-wired 5-sponsor agent loop</li>
+            <li>SuperCompress before every inference</li>
+            <li>Projects, plans, briefs in <code>.harbor/</code></li>
+            <li>Integration picker + OAuth (solo-friendly)</li>
+            <li>Run history with KV savings &amp; turn logs</li>
+          </ul>
+        </div>
+        <div class="compare-col">
+          <h3>Random scripts / Zapier</h3>
+          <ul>
+            <li>One integration per script</li>
+            <li>No research or reasoning layer</li>
+            <li>No memory compression</li>
+            <li>Fragile, not agentic</li>
+            <li>Doesn't plan — just triggers</li>
+          </ul>
+        </div>
       </div>
     </section>
 
-    <section id="stack">
-      <p class="section-label">Stack</p>
-      <h2 class="section-title">Every sponsor, meaningfully integrated</h2>
-      <div class="grid-3">
-        <article class="card">
-          <div class="card-icon">🔍</div>
-          <h3>Tavily</h3>
-          <p>Real-time search, extract, Q&A, company intel.</p>
+    <section class="container site-section">
+      <p class="section-num"><span>04</span> · What you get</p>
+      <h2>One workspace. Your whole builder loop.</h2>
+      <div class="feature-grid">
+        <article class="feature-cell">
+          <span class="feature-tag">Connect</span>
+          <h3>Pick your integrations</h3>
+          <p>GitHub-only works. Add Linear, Gmail, or Slack when you need them. OAuth to your whole account.</p>
         </article>
-        <article class="card">
-          <div class="card-icon">🔗</div>
-          <h3>Composio</h3>
-          <p>OAuth to your whole GitHub account. Optional Linear & Gmail.</p>
+        <article class="feature-cell">
+          <span class="feature-tag">Plan</span>
+          <h3>Agent roadmaps</h3>
+          <p><code>harbor run "…" --plan</code> → checkable tasks in <code>.harbor/plans.json</code>.</p>
         </article>
-        <article class="card">
-          <div class="card-icon">⚡</div>
-          <h3>Nebius</h3>
-          <p>Multi-turn tool-calling inference.</p>
+        <article class="feature-cell">
+          <span class="feature-tag">Run</span>
+          <h3>Tasks that execute</h3>
+          <p>Triage PRs, draft tickets, research competitors — with real Composio actions, not hallucinations.</p>
         </article>
-        <article class="card">
-          <div class="card-icon">🧠</div>
+        <article class="feature-cell">
+          <span class="feature-tag">Memory</span>
           <h3>SuperCompress</h3>
-          <p>Memory layer before each LLM call — 65% KV savings in demo.</p>
+          <p>Context trimmed before each LLM call. 35–65% KV savings. Long runs don't collapse.</p>
         </article>
-        <article class="card">
-          <div class="card-icon">🦞</div>
-          <h3>OpenClaw</h3>
-          <p>SKILL.md + webhook bridge for 24/7 runtime.</p>
+        <article class="feature-cell">
+          <span class="feature-tag">Projects</span>
+          <h3>Build context</h3>
+          <p>Switch what you're shipping. Briefs, runs, and plans tie to your active project.</p>
         </article>
-        <article class="card">
-          <div class="card-icon">🌅</div>
-          <h3>Workflows</h3>
-          <p><code>harbor brief</code> · <code>harbor incident</code> · <code>harbor demo</code></p>
+        <article class="feature-cell">
+          <span class="feature-tag">Local</span>
+          <h3>Sidebar dashboard</h3>
+          <p><code>harbor serve</code> → Connect · Projects · Agent · Plans · History at localhost.</p>
         </article>
       </div>
     </section>
 
-    <section id="start">
-      <p class="section-label">Install</p>
-      <h2 class="section-title">Running in 60 seconds</h2>
-      <div class="terminal" style="max-width: 640px;">
-        <div class="terminal-bar">
-          <span class="terminal-dot terminal-dot--r"></span>
-          <span class="terminal-dot terminal-dot--y"></span>
-          <span class="terminal-dot terminal-dot--g"></span>
-          <span class="terminal-title">install</span>
-        </div>
-        <div class="terminal-body" style="min-height: auto;">
-          <div><span class="t-dim">$</span> git clone https://github.com/arjunkshah/harbor.git</div>
-          <div><span class="t-dim">$</span> cd harbor && ./bootstrap.sh</div>
-          <div><span class="t-dim">$</span> source .venv/bin/activate</div>
-          <div><span class="t-dim">$</span> harbor setup</div>
-          <div><span class="t-dim">$</span> harbor brief</div>
-        </div>
+    <section class="container site-section">
+      <p class="section-num"><span>05</span> · Why each sponsor matters</p>
+      <h2>Five tools. One loop. None optional.</h2>
+      <p class="section-body">Harbor isn't "integrated with sponsors" — it's <em>built from</em> them. Each one solves a layer generic agents skip.</p>
+      <div class="sponsor-grid">
+        <article class="sponsor-card">
+          <span>Gather</span>
+          <strong>Tavily</strong>
+          <p>Live web intel before every run — competitor moves, outage status, docs you haven't read yet. Chatbots guess; Harbor searches.</p>
+        </article>
+        <article class="sponsor-card">
+          <span>Act</span>
+          <strong>Composio</strong>
+          <p>OAuth to your real GitHub, Linear, Gmail. Not mock tools — actual PRs, tickets, and inbox threads in the agent loop.</p>
+        </article>
+        <article class="sponsor-card">
+          <span>Remember</span>
+          <strong>SuperCompress</strong>
+          <p>Proprietary memory layer. Trained on your workflow context. Without it, multi-step agent runs hit token walls and forget.</p>
+        </article>
+        <article class="sponsor-card">
+          <span>Think</span>
+          <strong>Nebius Token Factory</strong>
+          <p>Multi-turn tool-calling inference — the reasoning engine that decides what to do with gathered context.</p>
+        </article>
+        <article class="sponsor-card">
+          <span>Host (optional)</span>
+          <strong>OpenClaw</strong>
+          <p>24/7 runtime bridge via SKILL.md — not the product. Harbor works standalone via CLI + local dashboard.</p>
+        </article>
+        <article class="sponsor-card">
+          <span>Persist</span>
+          <strong>Harbor workspace</strong>
+          <p><code>.harbor/</code> — projects, plans, briefs, run history, KV stats. The thing no runtime gives you for free.</p>
+        </article>
       </div>
-      <p style="margin-top: 24px; color: var(--text-muted); font-size: 0.9rem;">
-        No keys yet? <code style="font-family:var(--mono);color:var(--water-glow)">harbor demo</code> runs with fixtures.
-        <a href="docs.html#setup">Full setup docs →</a>
-      </p>
-      <p style="margin-top: 12px; color: var(--text-muted); font-size: 0.9rem;">
-        <strong>Local workspace</strong> — projects, integration toggles, agent prompts, run history:
-        <code style="font-family:var(--mono)">harbor serve</code> →
-        <code style="font-family:var(--mono)">http://127.0.0.1:8787/dashboard</code>
+    </section>
+
+    <section class="container site-section">
+      <p class="section-num"><span>06</span> · Harbor Engine</p>
+      <h2>Gather → compress → think → act → persist</h2>
+      <div class="pipeline-row">
+        <span class="pipe-chip">Tavily</span>
+        <span class="pipe-arrow">→</span>
+        <span class="pipe-chip">Composio</span>
+        <span class="pipe-arrow">→</span>
+        <span class="pipe-chip">SuperCompress</span>
+        <span class="pipe-arrow">→</span>
+        <span class="pipe-chip">Nebius</span>
+        <span class="pipe-arrow">→</span>
+        <span class="pipe-chip">.harbor/</span>
+      </div>
+    </section>
+
+    <section class="container site-section" id="install">
+      <p class="section-num"><span>07</span> · Install</p>
+      <h2>Running in 60 seconds</h2>
+      <div class="install-block">
+        <div><span class="dim">$</span> <span class="cmd">git clone https://github.com/arjunkshah/harbor.git</span></div>
+        <div><span class="dim">$</span> <span class="cmd">cd harbor && ./bootstrap.sh</span></div>
+        <div><span class="dim">$</span> <span class="cmd">source .venv/bin/activate && harbor setup</span></div>
+        <div><span class="dim">$</span> <span class="cmd">harbor serve</span></div>
+        <div style="margin-top:12px;color:var(--text-faint)">→ http://127.0.0.1:8787/dashboard</div>
+      </div>
+      <p class="section-body" style="margin-top:32px;margin-bottom:0">
+        No keys? <code>harbor demo</code>. Then <code>harbor run "plan my launch" --plan</code> or <code>harbor brief</code>.
       </p>
     </section>
 
-    <section>
-      <div class="cta-block">
-        <h2>Built for BuilderShip</h2>
-        <p>Open source on GitHub · MIT · Submit by June 12</p>
-        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-          <a href="https://github.com/arjunkshah/harbor" class="btn btn-primary">View on GitHub</a>
-          <a href="docs.html" class="btn btn-ghost">Documentation</a>
-        </div>
+    <section class="container site-cta">
+      <h2>Built to win BuilderShip</h2>
+      <p>Full sponsor stack · solo-builder UX · open source · ships today</p>
+      <div class="site-hero-actions" style="justify-content:center">
+        <a href="https://github.com/arjunkshah/harbor" class="btn btn-fill">View on GitHub</a>
+        <a href="docs.html" class="btn btn-line">Read docs</a>
       </div>
     </section>
   </main>
 
-  <footer>
-    <div class="container">
-      <p>
-        <a href="index.html">Home</a>
-        <a href="docs.html">Docs</a>
-        <a href="https://github.com/arjunkshah/harbor">GitHub</a>
-        <a href="https://ship.builders">BuilderShip</a>
-      </p>
-      <p style="margin-top: 12px;">Harbor · MIT · BuilderShip 2026</p>
+  <footer class="container site-footer">
+    <div>
+      <a href="index.html">Home</a>
+      <a href="docs.html">Docs</a>
+      <a href="https://github.com/arjunkshah/harbor">GitHub</a>
+      <a href="https://ship.builders">BuilderShip</a>
     </div>
+    <div>Harbor · workspace for AI builders</div>
   </footer>
 
   <script src="assets/js/config.js"></script>

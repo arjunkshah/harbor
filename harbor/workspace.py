@@ -173,24 +173,26 @@ def workspace_overview(*, connected: Optional[Dict[str, bool]] = None) -> Dict[s
     runs = list_runs(5)
     project_runs = [r for r in runs if r.get("meta", {}).get("project_id") == (active or {}).get("id")]
     return {
-        "tagline": "Centralized ops workspace for vibe coders — not a single OpenClaw prompt.",
+        "tagline": "The workspace for AI builders and vibe coders — connect, plan, ship.",
         "active_project": active,
         "projects": list_projects(),
         "integrations": integration_catalog(connected=connected),
         "stats": stats(),
         "recent_runs": project_runs or runs[:3],
         "differentiators": [
-            "Multi-sponsor agent loop (Tavily → Composio → SuperCompress → Nebius → actions)",
-            "Persistent run history, KV savings, and turn logs in .harbor/",
-            "Pick your integrations — GitHub-only works; Slack optional",
-            "Project workspace ties briefs to what you're building",
-            "OpenClaw is one runtime bridge; Harbor owns memory + cross-app ops",
+            "Harbor Engine — Tavily → Composio → SuperCompress → Nebius → actions in one loop",
+            "Persistent .harbor/ workspace: projects, plans, briefs, run history, KV savings",
+            "Plan and execute builder tasks — not just morning briefs or chat",
+            "Pick integrations (GitHub-only works; Slack optional for solo builders)",
+            "OpenClaw is an optional runtime bridge — Harbor owns orchestration + memory",
         ],
     }
 
 
 def prompt_catalog() -> List[Dict[str, Any]]:
     from harbor.agent.prompts import (
+        BUILDER_PLAN_SYSTEM,
+        BUILDER_TASK_SYSTEM,
         INCIDENT_COMMANDER_SYSTEM,
         MORNING_BRIEF_SYSTEM,
         OPENCLAW_BRIDGE_SYSTEM,
@@ -229,9 +231,21 @@ def prompt_catalog() -> List[Dict[str, Any]]:
             ),
         },
         {
+            "id": "builder_task",
+            "label": "Builder task (run)",
+            "system": BUILDER_TASK_SYSTEM,
+            "dynamic_task": "User task — gather connected apps, research, act, summarize.",
+        },
+        {
+            "id": "builder_plan",
+            "label": "Builder plan",
+            "system": BUILDER_PLAN_SYSTEM,
+            "dynamic_task": "Plan only — title, goal, numbered shippable tasks.",
+        },
+        {
             "id": "openclaw_bridge",
-            "label": "OpenClaw bridge (thin wrapper)",
+            "label": "OpenClaw bridge (optional runtime)",
             "system": OPENCLAW_BRIDGE_SYSTEM,
-            "dynamic_task": "User message from OpenClaw gateway — Harbor runs full gather/compress/act pipeline.",
+            "dynamic_task": "Thin gateway session — Harbor runs full gather/compress/act pipeline.",
         },
     ]
