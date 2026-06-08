@@ -1,8 +1,6 @@
 # Harbor
 
-**Autonomous builder ops for the [BuilderShip](https://ship.builders) stack.**
-
-Harbor runs morning briefs and incident response across **Tavily**, **Composio**, **Nebius**, **OpenClaw**, and **SuperCompress**.
+**Autonomous builder workspace for vibe coders** — ideate, queue Codex/Claude Code, connect your stack, ship.
 
 📦 **https://github.com/arjunkshah/harbor**
 
@@ -58,6 +56,13 @@ harbor serve
 | `harbor integrations set github,linear` | Choose which Composio apps Harbor uses |
 | `harbor dashboard` | Open local workspace (starts server) |
 | `harbor serve` | Local server — dashboard + API (not GitHub Pages) |
+| `harbor run "…"` | General builder agent task |
+| `harbor run "…" --plan` | Plan only → `.harbor/plans.json` |
+| **`harbor build ideate "…"`** | Refine idea → `docs/harbor/ideation.md` |
+| **`harbor build approve`** | PRD + feature docs + queue Codex/Claude |
+| **`harbor build queue "…"`** | Queue custom coding prompt |
+| **`harbor build status --watch`** | Monitor queue + alerts |
+| **`harbor build agents`** | Detect Codex / Claude Code CLIs |
 | `harbor brief` | Morning brief workflow |
 | `harbor incident "…"` | Incident commander |
 | `harbor doctor` | Verify integrations |

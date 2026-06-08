@@ -18,6 +18,8 @@ from harbor.doctor import run_doctor
 from harbor.setup import run_setup
 from harbor.workflows import run_builder_task, run_incident_commander, run_morning_brief
 
+build_app = typer.Typer(help="Ideate → PRD → Codex/Claude Code queue")
+
 app = typer.Typer(
     name="harbor",
     help="Harbor — builder workspace for AI-native developers (connect · plan · ship)",
@@ -84,6 +86,88 @@ def run_task(
     console.print(f"[bold cyan]{label}[/bold cyan] — {query}\n")
     out = run_builder_task(query, plan_only=plan)
     _print_workflow_output(out, json_out)
+
+
+app.add_typer(build_app, name="build")
+
+
+@build_app.command("agents")
+def build_agents() -> None:
+    """List detected Codex / Claude Code CLIs."""
+    from harbor.coding.backends import detect_coding_agents
+
+    for a in detect_coding_agents():
+        flag = "[green]✓[/green]" if a.available else "[dim]—[/dim]"
+        console.print(f"  {flag} [cyan]{a.id}[/cyan] — {a.label}")
+        if a.path:
+            console.print(f"      [dim]{a.path} {a.version_hint}[/dim]")
+
+
+@build_app.command("ideate")
+def build_ideate(idea: str = typer.Argument(..., help="Raw idea to refine")) -> None:
+    """Ideate with Harbor — saves to docs/harbor/ideation.md."""
+    from harbor.coding.pipeline import ideate
+
+    console.print("[bold cyan]Harbor Ideate[/bold cyan]\n")
+    out = ideate(idea)
+    console.print(Panel(Markdown(out.get("summary") or "_No summary_"), title="Ideation"))
+    console.print(f"\n[dim]Phase:[/dim] {out.get('phase')} · [dim]Approve:[/dim] [cyan]harbor build approve[/cyan]")
+
+
+@build_app.command("approve")
+def build_approve(
+    agent: Optional[str] = typer.Option(None, "--agent", help="codex | claude | auto"),
+) -> None:
+    """Generate PRD, scaffold docs/, queue coding agent jobs."""
+    from harbor.coding.pipeline import approve_ideation
+
+    console.print("[bold cyan]Harbor Approve[/bold cyan] — PRD + queue\n")
+    out = approve_ideation(agent=agent)
+    console.print(f"[green]✓[/green] {out['features']} features → {out['jobs_queued']} jobs queued ({out['agent']})")
+    console.print(f"[dim]Docs:[/dim] {out['docs'].get('docs_root')}")
+    console.print("[dim]Monitor:[/dim] [cyan]harbor build status[/cyan] or dashboard → Build")
+
+
+@build_app.command("queue")
+def build_queue(
+    prompt: str = typer.Argument(..., help="Prompt for coding agent"),
+    agent: Optional[str] = typer.Option(None, "--agent"),
+) -> None:
+    """Queue a custom prompt for Codex / Claude Code."""
+    from harbor.coding.pipeline import queue_custom_prompt
+
+    out = queue_custom_prompt(prompt, agent=agent)
+    console.print(f"[green]✓[/green] Job {out['job']['id']} queued ({out['job']['agent']})")
+
+
+@build_app.command("status")
+def build_status(watch: bool = typer.Option(False, "--watch", help="Poll every 5s")) -> None:
+    """Queue status + alerts."""
+    import time
+    from harbor.coding.pipeline import pipeline_status
+    from harbor.coding.queue import tick_worker
+
+    def _show() -> None:
+        tick_worker()
+        st = pipeline_status()
+        q = st["queue"]
+        proj = st.get("project") or {}
+        console.print(f"\n[bold]{proj.get('name', '—')}[/bold] · phase [cyan]{proj.get('build_phase', 'idle')}[/cyan]")
+        console.print(f"  queued {q['queued']} · running {q['running']} · needs you {q['needs_you']} · done {q['completed']}")
+        for job in st.get("jobs", [])[:5]:
+            console.print(f"  [dim]{job['id']}[/dim] {job['status']} {job['phase']} ({job['agent']})")
+        unread = st.get("alerts_unread", 0)
+        if unread:
+            console.print(f"  [yellow]{unread} unread alert(s)[/yellow]")
+
+    _show()
+    if watch:
+        try:
+            while True:
+                time.sleep(5)
+                _show()
+        except KeyboardInterrupt:
+            pass
 
 
 @app.command("incident")

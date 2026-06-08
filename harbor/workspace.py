@@ -25,6 +25,11 @@ class Project:
     notes: str = ""
     created_at: str = ""
     run_count: int = 0
+    repo_path: str = ""
+    coding_agent: str = "auto"
+    build_phase: str = "idle"  # idle | ideate | approved | building | review | done | needs_you
+    ideation_summary: str = ""
+    prd_ready: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -50,6 +55,19 @@ def _ensure() -> None:
     (ROOT / ".harbor").mkdir(parents=True, exist_ok=True)
 
 
+def _project_from_dict(p: Dict[str, Any]) -> Project:
+    fields = Project.__dataclass_fields__
+    merged = {
+        "repo_path": "",
+        "coding_agent": "auto",
+        "build_phase": "idle",
+        "ideation_summary": "",
+        "prd_ready": False,
+        **p,
+    }
+    return Project(**{k: merged.get(k, fields[k].default) for k in fields})
+
+
 def _load_state() -> WorkspaceState:
     _ensure()
     if not WORKSPACE_FILE.exists():
@@ -63,7 +81,7 @@ def _load_state() -> WorkspaceState:
         return state
     try:
         raw = json.loads(WORKSPACE_FILE.read_text(encoding="utf-8"))
-        projects = [Project(**p) for p in raw.get("projects", [])]
+        projects = [_project_from_dict(p) for p in raw.get("projects", [])]
         return WorkspaceState(
             active_project_id=raw.get("active_project_id"),
             projects=projects,
@@ -91,7 +109,14 @@ def get_active_project() -> Optional[Dict[str, Any]]:
     return state.projects[0].to_dict() if state.projects else None
 
 
-def create_project(name: str, *, focus: str = "", company: str = "", notes: str = "") -> Dict[str, Any]:
+def create_project(
+    name: str,
+    *,
+    focus: str = "",
+    company: str = "",
+    notes: str = "",
+    repo_path: str = "",
+) -> Dict[str, Any]:
     state = _load_state()
     proj = Project(
         id=str(uuid.uuid4())[:8],
@@ -99,12 +124,37 @@ def create_project(name: str, *, focus: str = "", company: str = "", notes: str 
         focus=focus.strip() or "AI agent infrastructure",
         company=company.strip() or "Composio",
         notes=notes.strip(),
+        repo_path=repo_path.strip(),
         created_at=_now(),
     )
     state.projects.insert(0, proj)
     state.active_project_id = proj.id
     _save_state(state)
     return proj.to_dict()
+
+
+def get_project_by_id(project_id: str) -> Optional[Dict[str, Any]]:
+    for p in _load_state().projects:
+        if p.id == project_id:
+            return p.to_dict()
+    return None
+
+
+def update_project(project_id: str, **fields: Any) -> Dict[str, Any]:
+    state = _load_state()
+    for p in state.projects:
+        if p.id != project_id:
+            continue
+        for key, val in fields.items():
+            if hasattr(p, key):
+                setattr(p, key, val)
+        _save_state(state)
+        return p.to_dict()
+    raise ValueError(f"Unknown project: {project_id}")
+
+
+def set_build_phase(project_id: str, phase: str) -> Dict[str, Any]:
+    return update_project(project_id, build_phase=phase)
 
 
 def set_active_project(project_id: str) -> Dict[str, Any]:
@@ -173,7 +223,7 @@ def workspace_overview(*, connected: Optional[Dict[str, bool]] = None) -> Dict[s
     runs = list_runs(5)
     project_runs = [r for r in runs if r.get("meta", {}).get("project_id") == (active or {}).get("id")]
     return {
-        "tagline": "The workspace for AI builders and vibe coders — connect, plan, ship.",
+        "tagline": "Open-source workspace for vibe coders — ideate, code, connect, ship.",
         "active_project": active,
         "projects": list_projects(),
         "integrations": integration_catalog(connected=connected),
@@ -181,8 +231,8 @@ def workspace_overview(*, connected: Optional[Dict[str, bool]] = None) -> Dict[s
         "recent_runs": project_runs or runs[:3],
         "differentiators": [
             "Harbor Engine — Tavily → Composio → SuperCompress → Nebius → actions in one loop",
-            "Persistent .harbor/ workspace: projects, plans, briefs, run history, KV savings",
-            "Plan and execute builder tasks — not just morning briefs or chat",
+            "Build pipeline — ideate → PRD → queue Codex / Claude Code → notify when done",
+            "Persistent .harbor/ workspace: projects, plans, briefs, coding queue, run history",
             "Pick integrations (GitHub-only works; Slack optional for solo builders)",
             "OpenClaw is an optional runtime bridge — Harbor owns orchestration + memory",
         ],

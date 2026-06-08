@@ -257,6 +257,9 @@ async function refresh() {
   renderRuns(runs);
   const { plans } = await loadPlans();
   renderPlans(plans);
+  const build = await loadBuild();
+  renderBuild(build);
+  await renderAlerts();
 }
 
 async function saveIntegrations() {
@@ -303,6 +306,156 @@ async function newProject() {
     body: JSON.stringify({ name }),
   });
   await refresh();
+}
+
+async function loadBuild() {
+  const res = await fetch("/api/dashboard/build");
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function loadAlerts() {
+  const res = await fetch("/api/dashboard/alerts?unread=true");
+  if (!res.ok) return { alerts: [] };
+  return res.json();
+}
+
+function renderBuild(st) {
+  if (!st) return;
+  const proj = st.project || {};
+  const q = st.queue || {};
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = v;
+  };
+  set("build-phase", proj.build_phase || "idle");
+  set("build-queued", q.queued ?? 0);
+  set("build-running", q.running ?? 0);
+  set("build-needs", q.needs_you ?? 0);
+  set("build-alerts", st.alerts_unread ?? 0);
+
+  const repo = document.getElementById("repo-path");
+  if (repo && proj.repo_path && !repo.dataset.touched) repo.value = proj.repo_path;
+
+  const agentsEl = document.getElementById("agents-panel");
+  if (agentsEl) {
+    agentsEl.innerHTML = (st.agents || [])
+      .map(
+        (a) =>
+          `<p style="font-size:0.85rem;margin-bottom:8px">${a.available ? "✓" : "—"} <strong>${esc(a.label)}</strong> <span style="color:var(--text-faint)">${esc(a.id)}</span></p>`
+      )
+      .join("");
+  }
+
+  const sel = document.getElementById("coding-agent");
+  if (sel) {
+    const opts = [{ id: "auto", label: "Auto-detect" }, ...(st.agents || []).filter((a) => a.available)];
+    sel.innerHTML = opts.map((a) => `<option value="${esc(a.id)}">${esc(a.label || a.id)}</option>`).join("");
+    if (proj.coding_agent) sel.value = proj.coding_agent;
+  }
+
+  const jobsEl = document.getElementById("build-jobs");
+  if (jobsEl) {
+    const jobs = st.jobs || [];
+    jobsEl.innerHTML = jobs.length
+      ? jobs
+          .map(
+            (j) => `
+      <div class="run-item" style="cursor:default">
+        <div class="run-item-head"><span class="run-tag">${esc(j.status)}</span><span>${esc(j.agent)} · ${esc(j.phase)}</span></div>
+        <div class="run-preview">${esc((j.meta?.title || j.prompt || "").slice(0, 100))}</div>
+        ${j.needs_attention ? `<p style="color:var(--accent);font-size:0.78rem;margin-top:6px">${esc(j.attention_reason)}</p>` : ""}
+      </div>`
+          )
+          .join("")
+      : `<div class="empty">No coding jobs — ideate &amp; approve to queue</div>`;
+  }
+
+  const docsEl = document.getElementById("build-docs");
+  if (docsEl && st.docs) {
+    const root = st.docs.docs_root || "";
+    const files = Object.keys(st.docs.files || {});
+    const feats = (st.docs.features || []).join(", ");
+    docsEl.textContent = `${root}\n${files.join("\n")}\nfeatures: ${feats}`;
+  }
+}
+
+async function renderAlerts() {
+  const { alerts } = await loadAlerts();
+  const el = document.getElementById("alerts-panel");
+  if (!el) return;
+  if (!alerts.length) {
+    el.innerHTML = `<p style="font-size:0.85rem;color:var(--text-faint)">No alerts</p>`;
+    return;
+  }
+  el.innerHTML = alerts
+    .map(
+      (a) => `
+    <div class="plan-card" style="margin-bottom:8px">
+      <strong>${esc(a.title)}</strong>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-top:6px">${esc(a.message)}</p>
+      ${a.needs_you ? '<span style="color:var(--accent);font-size:0.75rem">Needs you</span>' : ""}
+    </div>`
+    )
+    .join("");
+}
+
+async function saveRepoPath() {
+  const path = document.getElementById("repo-path")?.value.trim();
+  const sel = document.getElementById("project-select");
+  const pid = sel?.value;
+  if (!pid || !path) return;
+  await fetch(`/api/dashboard/projects/${pid}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ repo_path: path }),
+  });
+}
+
+async function runIdeate() {
+  const idea = document.getElementById("ideate-input")?.value.trim();
+  if (!idea) return alert("Describe your idea");
+  flashStatus("Ideating…");
+  const res = await fetch("/api/dashboard/build/ideate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idea }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Ideate failed");
+  await refresh();
+  flashStatus("Ideation saved — approve when ready");
+}
+
+async function runApprove() {
+  await saveRepoPath().catch(() => {});
+  const agent = document.getElementById("coding-agent")?.value || "auto";
+  flashStatus("Generating PRD & queuing jobs…");
+  const res = await fetch("/api/dashboard/build/approve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ agent: agent === "auto" ? null : agent }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Approve failed");
+  await refresh();
+  flashStatus(`${data.jobs_queued} jobs queued`);
+}
+
+async function runCodeQueue() {
+  await saveRepoPath().catch(() => {});
+  const prompt = document.getElementById("code-prompt")?.value.trim();
+  if (!prompt) return alert("Enter a prompt");
+  const agent = document.getElementById("coding-agent")?.value || "auto";
+  const res = await fetch("/api/dashboard/build/queue", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, agent: agent === "auto" ? null : agent }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Queue failed");
+  await refresh();
+  flashStatus(`Job ${data.job.id} queued`);
 }
 
 function flashStatus(msg) {
@@ -411,6 +564,10 @@ document.addEventListener("DOMContentLoaded", () => {
   ["brief-company", "brief-focus"].forEach((id) => {
     document.getElementById(id)?.addEventListener("input", (e) => (e.target.dataset.touched = "1"));
   });
+  document.getElementById("btn-ideate")?.addEventListener("click", () => runIdeate().catch((e) => alert(e.message)));
+  document.getElementById("btn-approve")?.addEventListener("click", () => runApprove().catch((e) => alert(e.message)));
+  document.getElementById("btn-code-queue")?.addEventListener("click", () => runCodeQueue().catch((e) => alert(e.message)));
+  document.getElementById("repo-path")?.addEventListener("change", (e) => (e.target.dataset.touched = "1"));
   refresh();
-  setInterval(refresh, 45000);
+  setInterval(refresh, 15000);
 });

@@ -20,6 +20,7 @@
       <button type="button" data-view="connect">Connect</button>
       <button type="button" data-view="projects">Projects</button>
       <button type="button" data-view="agent">Agent</button>
+      <button type="button" data-view="build" class="">Build</button>
       <button type="button" data-view="plans">Plans</button>
       <button type="button" data-view="history">History</button>
     </nav>
@@ -129,6 +130,62 @@
         </div>
       </div>
       <p id="run-status" style="text-align:center;font-size:0.85rem;color:var(--accent);min-height:24px;margin-top:12px"></p>
+    </section>
+
+    <!-- Build (ideate → PRD → Codex/Claude) -->
+    <section class="ws-view" id="view-build">
+      <header class="ws-header">
+        <h1>Build</h1>
+        <p>Ideate → approve → PRD + docs → queue Codex or Claude Code → get notified when done.</p>
+      </header>
+      <div class="ws-stats" style="grid-template-columns:repeat(5,1fr)">
+        <div class="ws-stat"><div class="ws-stat-val" id="build-phase">idle</div><div class="ws-stat-label">Phase</div></div>
+        <div class="ws-stat"><div class="ws-stat-val" id="build-queued">0</div><div class="ws-stat-label">Queued</div></div>
+        <div class="ws-stat"><div class="ws-stat-val" id="build-running">0</div><div class="ws-stat-label">Running</div></div>
+        <div class="ws-stat"><div class="ws-stat-val" id="build-needs">0</div><div class="ws-stat-label">Needs you</div></div>
+        <div class="ws-stat"><div class="ws-stat-val" id="build-alerts">0</div><div class="ws-stat-label">Alerts</div></div>
+      </div>
+      <div class="ws-grid">
+        <div>
+          <div class="ws-panel">
+            <span class="ws-panel-title">1 · Ideate</span>
+            <label class="ws-label" for="ideate-input">What's the idea?</label>
+            <textarea class="ws-textarea" id="ideate-input" placeholder="Auth flow for solo founders — magic link, no passwords…"></textarea>
+            <button type="button" class="ws-btn ws-btn-primary" id="btn-ideate">Refine with Harbor</button>
+          </div>
+          <div class="ws-panel">
+            <span class="ws-panel-title">2 · Approve → PRD + queue</span>
+            <label class="ws-label" for="coding-agent">Coding agent</label>
+            <select class="ws-select" id="coding-agent"></select>
+            <label class="ws-label" for="repo-path">Repo path (optional)</label>
+            <input class="ws-input" id="repo-path" type="text" placeholder="/Users/you/projects/my-app" />
+            <button type="button" class="ws-btn ws-btn-primary ws-btn-block" id="btn-approve">Approve — generate PRD &amp; queue jobs</button>
+          </div>
+          <div class="ws-panel">
+            <span class="ws-panel-title">Queue custom prompt</span>
+            <textarea class="ws-textarea" id="code-prompt" placeholder="Fix the OAuth redirect in src/auth…"></textarea>
+            <button type="button" class="ws-btn ws-btn-block" id="btn-code-queue">Queue for coding agent</button>
+          </div>
+        </div>
+        <div>
+          <div class="ws-panel">
+            <span class="ws-panel-title">Coding agents detected</span>
+            <div id="agents-panel"></div>
+          </div>
+          <div class="ws-panel">
+            <span class="ws-panel-title">Job queue</span>
+            <div id="build-jobs"></div>
+          </div>
+          <div class="ws-panel">
+            <span class="ws-panel-title">Alerts</span>
+            <div id="alerts-panel"></div>
+          </div>
+          <div class="ws-panel">
+            <span class="ws-panel-title">Docs scaffold</span>
+            <pre id="build-docs" style="font-family:var(--mono);font-size:0.72rem;color:var(--text-muted);white-space:pre-wrap;max-height:200px;overflow:auto"></pre>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Plans -->

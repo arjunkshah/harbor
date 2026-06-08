@@ -25,6 +25,17 @@ from harbor.workspace import (
     set_enabled_toolkits,
     workspace_overview,
 )
+from contextlib import asynccontextmanager
+import asyncio
+
+from harbor.coding.queue import tick_worker
+from harbor.coding.pipeline import (
+    approve_ideation,
+    ideate,
+    pipeline_status,
+    queue_custom_prompt,
+)
+from harbor.coding.notify import list_alerts, mark_alert_read
 from harbor.workflows import run_builder_task, run_incident_commander, run_morning_brief
 
 WEB_DIR = Path(__file__).resolve().parent.parent.parent / "web"
@@ -33,12 +44,34 @@ LOCAL_DIR = Path(__file__).resolve().parent.parent.parent / "local"
 logging.basicConfig(level=get_settings().harbor_log_level)
 logger = logging.getLogger(__name__)
 
+
+async def _coding_worker_loop() -> None:
+    while True:
+        try:
+            tick_worker()
+        except Exception as exc:
+            logger.debug("coding worker tick: %s", exc)
+        await asyncio.sleep(3)
+
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    task = asyncio.create_task(_coding_worker_loop())
+    yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
 app = FastAPI(
     title="Harbor Agent API",
-    description="BuilderShip stack: OpenClaw + Composio + Tavily + Nebius + SuperCompress",
-    version="1.0.0",
+    description="Builder workspace: ops + coding agents (Codex, Claude Code)",
+    version="1.1.0",
     docs_url="/api/reference",
     redoc_url="/api/redoc",
+    lifespan=_lifespan,
 )
 
 if (WEB_DIR / "assets").is_dir():
@@ -147,6 +180,14 @@ class ProjectBody(BaseModel):
     focus: str = ""
     company: str = ""
     notes: str = ""
+    repo_path: str = ""
+
+
+class ProjectPatchBody(BaseModel):
+    repo_path: Optional[str] = None
+    coding_agent: Optional[str] = None
+    focus: Optional[str] = None
+    notes: Optional[str] = None
 
 
 @app.get("/api/dashboard/projects")
@@ -156,8 +197,25 @@ def dashboard_projects() -> Dict[str, Any]:
 
 @app.post("/api/dashboard/projects")
 def dashboard_projects_create(body: ProjectBody) -> Dict[str, Any]:
-    proj = create_project(body.name, focus=body.focus, company=body.company, notes=body.notes)
+    proj = create_project(
+        body.name,
+        focus=body.focus,
+        company=body.company,
+        notes=body.notes,
+        repo_path=body.repo_path,
+    )
     return {"project": proj}
+
+
+@app.patch("/api/dashboard/projects/{project_id}")
+def dashboard_projects_patch(project_id: str, body: ProjectPatchBody) -> Dict[str, Any]:
+    from harbor.workspace import update_project
+
+    fields = {k: v for k, v in body.model_dump().items() if v is not None}
+    try:
+        return {"project": update_project(project_id, **fields)}
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
 
 
 @app.post("/api/dashboard/projects/{project_id}/activate")
@@ -273,6 +331,71 @@ def dashboard_plan_toggle(plan_id: str, task_index: int) -> Dict[str, Any]:
     if not plan:
         raise HTTPException(404, "Plan or task not found")
     return {"plan": plan}
+
+
+# --- Build pipeline (Codex / Claude Code) ---
+
+
+class IdeateBody(BaseModel):
+    idea: str
+
+
+class ApproveBody(BaseModel):
+    agent: Optional[str] = None
+
+
+class BuildQueueBody(BaseModel):
+    prompt: str
+    agent: Optional[str] = None
+    phase: str = "custom"
+
+
+@app.get("/api/dashboard/build")
+def dashboard_build_status() -> Dict[str, Any]:
+    return pipeline_status()
+
+
+@app.post("/api/dashboard/build/ideate")
+def dashboard_build_ideate(body: IdeateBody) -> Dict[str, Any]:
+    try:
+        return ideate(body.idea)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.post("/api/dashboard/build/approve")
+def dashboard_build_approve(body: ApproveBody) -> Dict[str, Any]:
+    try:
+        return approve_ideation(agent=body.agent)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.post("/api/dashboard/build/queue")
+def dashboard_build_queue(body: BuildQueueBody) -> Dict[str, Any]:
+    try:
+        return queue_custom_prompt(body.prompt, agent=body.agent, phase=body.phase)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.post("/api/dashboard/build/tick")
+def dashboard_build_tick() -> Dict[str, Any]:
+    job = tick_worker()
+    return {"job": job, "status": pipeline_status()}
+
+
+@app.get("/api/dashboard/alerts")
+def dashboard_alerts(unread: bool = False) -> Dict[str, Any]:
+    return {"alerts": list_alerts(unread_only=unread)}
+
+
+@app.patch("/api/dashboard/alerts/{alert_id}/read")
+def dashboard_alert_read(alert_id: str) -> Dict[str, Any]:
+    alert = mark_alert_read(alert_id)
+    if not alert:
+        raise HTTPException(404, "Alert not found")
+    return {"alert": alert}
 
 
 # --- Legacy / OpenClaw ---

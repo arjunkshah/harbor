@@ -44,6 +44,7 @@ class Settings(BaseSettings):
         default=",".join(SOLO_DEFAULT_TOOLKITS),
         validation_alias="COMPOSIO_TOOLKITS",
     )
+    harbor_coding_agent: str = Field(default="auto", validation_alias="HARBOR_CODING_AGENT")
 
     @property
     def demo_mode(self) -> bool:
