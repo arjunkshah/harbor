@@ -131,6 +131,68 @@ def upsert_card(
     return card.to_dict()
 
 
+def get_card(card_id: str) -> Optional[Dict[str, Any]]:
+    for c in _load():
+        if c.id == card_id:
+            return c.to_dict()
+    return None
+
+
+def create_card(
+    *,
+    project_id: str,
+    title: str,
+    description: str = "",
+    column: str = "backlog",
+    labels: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    return upsert_card(
+        project_id=project_id,
+        title=title,
+        description=description,
+        column=column,
+        source_type="manual",
+        source_id="",
+        labels=labels,
+    )
+
+
+def update_card(
+    card_id: str,
+    *,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    column: Optional[str] = None,
+    labels: Optional[List[str]] = None,
+) -> Optional[Dict[str, Any]]:
+    cards = _load()
+    for c in cards:
+        if c.id != card_id:
+            continue
+        if title is not None:
+            c.title = title[:200]
+        if description is not None:
+            c.description = description[:8000]
+        if column is not None and column in COLUMNS:
+            c.column = column
+            c.done = column == "done"
+        if labels is not None:
+            c.labels = labels
+        c.updated_at = _now()
+        _save(cards)
+        return c.to_dict()
+    return None
+
+
+def delete_card(card_id: str) -> bool:
+    cards = _load()
+    kept = [c for c in cards if c.id != card_id]
+    if len(kept) == len(cards):
+        return False
+    _save(kept)
+    return True
+
+
 def move_card(card_id: str, column: str) -> Optional[Dict[str, Any]]:
     if column not in COLUMNS:
         return None

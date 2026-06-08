@@ -185,6 +185,8 @@ class ProjectBody(BaseModel):
 
 
 class ProjectPatchBody(BaseModel):
+    name: Optional[str] = None
+    company: Optional[str] = None
     repo_path: Optional[str] = None
     coding_agent: Optional[str] = None
     focus: Optional[str] = None
@@ -334,6 +336,15 @@ def dashboard_plan_toggle(plan_id: str, task_index: int) -> Dict[str, Any]:
     return {"plan": plan}
 
 
+@app.delete("/api/dashboard/plans/{plan_id}")
+def dashboard_plan_delete(plan_id: str) -> Dict[str, Any]:
+    from harbor.plans import delete_plan
+
+    if not delete_plan(plan_id):
+        raise HTTPException(404, "Plan not found")
+    return {"deleted": plan_id}
+
+
 # --- Build pipeline (Codex / Claude Code) ---
 
 
@@ -434,8 +445,18 @@ def dashboard_settings_put(body: SettingsBody) -> Dict[str, Any]:
     return {"settings": update_settings(**fields)}
 
 
-class BoardMoveBody(BaseModel):
-    column: str
+class BoardCardBody(BaseModel):
+    title: str
+    description: str = ""
+    column: str = "backlog"
+    labels: List[str] = Field(default_factory=list)
+
+
+class BoardCardPatchBody(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    column: Optional[str] = None
+    labels: Optional[List[str]] = None
 
 
 @app.get("/api/dashboard/board")
@@ -447,14 +468,54 @@ def dashboard_board() -> Dict[str, Any]:
     return list_board(pid)
 
 
-@app.patch("/api/dashboard/board/cards/{card_id}")
-def dashboard_board_move(card_id: str, body: BoardMoveBody) -> Dict[str, Any]:
-    from harbor.board import move_card
+@app.post("/api/dashboard/board/cards")
+def dashboard_board_create(body: BoardCardBody) -> Dict[str, Any]:
+    from harbor.board import create_card
 
-    card = move_card(card_id, body.column)
+    active = get_active_project()
+    if not active:
+        raise HTTPException(404, "No active project")
+    card = create_card(
+        project_id=active["id"],
+        title=body.title,
+        description=body.description,
+        column=body.column,
+        labels=body.labels,
+    )
+    return {"card": card}
+
+
+@app.get("/api/dashboard/board/cards/{card_id}")
+def dashboard_board_card(card_id: str) -> Dict[str, Any]:
+    from harbor.board import get_card
+
+    card = get_card(card_id)
+    if not card:
+        raise HTTPException(404, "Card not found")
+    return {"card": card}
+
+
+@app.patch("/api/dashboard/board/cards/{card_id}")
+def dashboard_board_update(card_id: str, body: BoardCardPatchBody) -> Dict[str, Any]:
+    from harbor.board import get_card, move_card, update_card
+
+    fields = {k: v for k, v in body.model_dump().items() if v is not None}
+    column = fields.pop("column", None)
+    card = update_card(card_id, **fields) if fields else get_card(card_id)
+    if column:
+        card = move_card(card_id, column)
     if not card:
         raise HTTPException(404, "Card or column not found")
     return {"card": card}
+
+
+@app.delete("/api/dashboard/board/cards/{card_id}")
+def dashboard_board_delete(card_id: str) -> Dict[str, Any]:
+    from harbor.board import delete_card
+
+    if not delete_card(card_id):
+        raise HTTPException(404, "Card not found")
+    return {"deleted": card_id}
 
 
 # --- Legacy / OpenClaw ---

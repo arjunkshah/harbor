@@ -123,6 +123,15 @@ def create_plan(
     return plan_dict
 
 
+def delete_plan(plan_id: str) -> bool:
+    plans = _load()
+    kept = [p for p in plans if p.id != plan_id]
+    if len(kept) == len(plans):
+        return False
+    _save(kept)
+    return True
+
+
 def toggle_task(plan_id: str, task_index: int) -> Optional[Dict[str, Any]]:
     plans = _load()
     for plan in plans:

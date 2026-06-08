@@ -209,6 +209,7 @@ def integration_catalog(*, connected: Optional[Dict[str, bool]] = None) -> List[
                 "blurb": info.blurb,
                 "recommended": info.recommended,
                 "solo_default": info.solo_default,
+                "category": info.category,
                 "enabled": info.slug in enabled,
                 "connected": bool(connected.get(info.slug)),
             }

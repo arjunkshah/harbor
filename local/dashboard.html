@@ -16,14 +16,14 @@
       <strong>Builder workspace</strong>
     </div>
     <nav class="ws-nav" id="ws-nav">
-      <button type="button" data-view="overview" class="active">Overview</button>
-      <button type="button" data-view="connect">Connect</button>
-      <button type="button" data-view="projects">Projects</button>
-      <button type="button" data-view="agent">Agent</button>
-      <button type="button" data-view="board">Board</button>
-      <button type="button" data-view="build">Build</button>
-      <button type="button" data-view="plans">Plans</button>
-      <button type="button" data-view="history">History</button>
+      <button type="button" data-view="overview" class="active"><span class="nav-icon">◎</span> Overview</button>
+      <button type="button" data-view="connect"><span class="nav-icon">⬡</span> Connect</button>
+      <button type="button" data-view="projects"><span class="nav-icon">◇</span> Projects</button>
+      <button type="button" data-view="board"><span class="nav-icon">▦</span> Board</button>
+      <button type="button" data-view="build"><span class="nav-icon">⚙</span> Build <span class="nav-badge" id="nav-badge-build"></span></button>
+      <button type="button" data-view="agent"><span class="nav-icon">→</span> Agent</button>
+      <button type="button" data-view="plans"><span class="nav-icon">☰</span> Plans</button>
+      <button type="button" data-view="history"><span class="nav-icon">◷</span> History</button>
     </nav>
     <div class="ws-sidebar-foot">
       <span id="sidebar-status">checking…</span>
@@ -35,14 +35,21 @@
 
   <main class="ws-main">
     <div id="setup-banner"></div>
+    <div id="ws-toast" class="ws-toast" hidden></div>
 
     <!-- Overview -->
     <section class="ws-view active" id="view-overview">
       <header class="ws-header">
         <p class="ws-status" id="health-status">Harbor Engine</p>
         <h1 id="workspace-tagline">The workspace for AI builders</h1>
-        <p>Connect your stack, plan what to ship, run agents that work — with memory that persists in <code>.harbor/</code>.</p>
+        <p>Connect your stack, plan on the Board, run agents that work — with memory that persists in <code>.harbor/</code>.</p>
       </header>
+      <div class="quick-actions">
+        <button type="button" class="quick-action" data-goto="board">Open Board</button>
+        <button type="button" class="quick-action" data-goto="build">Start a build</button>
+        <button type="button" class="quick-action" data-goto="agent">Run agent</button>
+        <button type="button" class="quick-action" data-goto="connect">Connect apps</button>
+      </div>
       <div class="diff-box">
         <p class="ws-panel-title" style="margin-bottom:12px">Why Harbor (not just OpenClaw)</p>
         <ul id="diff-list"></ul>
@@ -66,45 +73,80 @@
     <section class="ws-view" id="view-connect">
       <header class="ws-header">
         <h1>Connect</h1>
-        <p>Choose which apps Harbor uses. OAuth-link each one. GitHub-only is enough to start.</p>
+        <p>Choose which apps Harbor uses. OAuth-link each one. GitHub + Gmail is enough to start solo.</p>
       </header>
       <div class="ws-panel">
+        <div class="ws-panel-head">
+          <span class="ws-panel-title">Integrations</span>
+          <span id="integrations-summary" class="ws-meta"></span>
+        </div>
         <div id="integrations-panel"></div>
         <button type="button" class="ws-btn ws-btn-primary ws-btn-block" id="btn-save-integrations">Save integration choices</button>
       </div>
       <div class="ws-panel">
         <span class="ws-panel-title">Settings</span>
-        <label class="ws-label" for="gmail-mode">Gmail sync</label>
-        <select class="ws-select" id="gmail-mode">
-          <option value="send">Auto-send emails</option>
-          <option value="draft">Save as drafts only</option>
-        </select>
-        <label class="ws-label" for="gmail-to">Gmail recipient</label>
-        <input class="ws-input" id="gmail-to" type="text" placeholder="me" />
+        <div class="ws-form-grid">
+          <div>
+            <label class="ws-label" for="gmail-mode">Gmail sync</label>
+            <select class="ws-select" id="gmail-mode">
+              <option value="send">Auto-send emails</option>
+              <option value="draft">Save as drafts only</option>
+            </select>
+          </div>
+          <div>
+            <label class="ws-label" for="gmail-to">Gmail recipient</label>
+            <input class="ws-input" id="gmail-to" type="text" placeholder="me" />
+          </div>
+        </div>
+        <label class="ws-check">
+          <input type="checkbox" id="auto-sync" checked />
+          <span>Auto-sync plans &amp; PRD to Board + connected apps</span>
+        </label>
         <button type="button" class="ws-btn ws-btn-block" id="btn-save-settings">Save settings</button>
       </div>
     </section>
 
     <!-- Board -->
     <section class="ws-view" id="view-board">
-      <header class="ws-header">
-        <h1>Board</h1>
-        <p>Harbor's native kanban — plans, features, and build jobs land here automatically.</p>
+      <header class="ws-header ws-header-row">
+        <div>
+          <h1>Board</h1>
+          <p>Harbor's native kanban — plans, features, and build jobs land here automatically.</p>
+        </div>
+        <button type="button" class="ws-btn ws-btn-primary" id="btn-board-add">+ Add card</button>
       </header>
       <div id="board-columns" class="board-columns"></div>
     </section>
 
     <!-- Projects -->
     <section class="ws-view" id="view-projects">
-      <header class="ws-header">
-        <h1>Projects</h1>
-        <p>What you're building. Briefs, runs, and plans tie to the active project.</p>
+      <header class="ws-header ws-header-row">
+        <div>
+          <h1>Projects</h1>
+          <p>What you're building. Briefs, runs, plans, and board cards tie to the active project.</p>
+        </div>
+        <button type="button" class="ws-btn ws-btn-primary" id="btn-new-project">+ New project</button>
       </header>
-      <div class="ws-panel">
-        <label class="ws-label">Active project</label>
-        <select class="ws-select" id="project-select"></select>
-        <button type="button" class="ws-btn" id="btn-new-project">+ New project</button>
-        <p id="project-meta" style="margin-top:16px;font-size:0.85rem;color:var(--text-muted)"></p>
+      <div class="ws-grid">
+        <div class="ws-panel">
+          <span class="ws-panel-title">Switch project</span>
+          <select class="ws-select" id="project-select"></select>
+          <p id="project-meta" class="ws-meta" style="margin-top:12px"></p>
+        </div>
+        <div class="ws-panel">
+          <span class="ws-panel-title">Edit active project</span>
+          <label class="ws-label" for="proj-name">Name</label>
+          <input class="ws-input" id="proj-name" type="text" />
+          <label class="ws-label" for="proj-company">Company</label>
+          <input class="ws-input" id="proj-company" type="text" />
+          <label class="ws-label" for="proj-focus">Focus</label>
+          <input class="ws-input" id="proj-focus" type="text" />
+          <label class="ws-label" for="proj-repo">Repo path</label>
+          <input class="ws-input" id="proj-repo" type="text" placeholder="/Users/you/projects/my-app" />
+          <label class="ws-label" for="proj-notes">Notes</label>
+          <textarea class="ws-textarea ws-textarea-sm" id="proj-notes" placeholder="Context for agents…"></textarea>
+          <button type="button" class="ws-btn ws-btn-primary ws-btn-block" id="btn-save-project">Save project</button>
+        </div>
       </div>
     </section>
 
@@ -120,7 +162,7 @@
             <span class="ws-panel-title">Builder task</span>
             <label class="ws-label" for="agent-query">What should Harbor do?</label>
             <textarea class="ws-textarea" id="agent-query" placeholder="Triage my open PRs and draft a ship plan…"></textarea>
-            <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div class="ws-btn-row">
               <button type="button" class="ws-btn ws-btn-primary" id="btn-agent-run">Run task</button>
               <button type="button" class="ws-btn" id="btn-agent-plan">Plan only</button>
             </div>
@@ -145,21 +187,21 @@
           </div>
           <div class="ws-panel">
             <span class="ws-panel-title">Agent prompts</span>
-            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">System + dynamic task (changes when integrations toggle).</p>
+            <p class="ws-meta" style="margin-bottom:12px">System + dynamic task (changes when integrations toggle).</p>
             <div id="prompts-panel"></div>
           </div>
         </div>
       </div>
-      <p id="run-status" style="text-align:center;font-size:0.85rem;color:var(--accent);min-height:24px;margin-top:12px"></p>
+      <p id="run-status" class="run-status"></p>
     </section>
 
-    <!-- Build (ideate → PRD → Codex/Claude) -->
+    <!-- Build -->
     <section class="ws-view" id="view-build">
       <header class="ws-header">
         <h1>Build</h1>
-        <p>Ideate → approve → PRD + docs → queue Codex or Claude Code → get notified when done.</p>
+        <p>Ideate → approve → PRD + docs → queue Codex or Claude Code → sync to connected apps.</p>
       </header>
-      <div class="ws-stats" style="grid-template-columns:repeat(5,1fr)">
+      <div class="ws-stats ws-stats-5">
         <div class="ws-stat"><div class="ws-stat-val" id="build-phase">idle</div><div class="ws-stat-label">Phase</div></div>
         <div class="ws-stat"><div class="ws-stat-val" id="build-queued">0</div><div class="ws-stat-label">Queued</div></div>
         <div class="ws-stat"><div class="ws-stat-val" id="build-running">0</div><div class="ws-stat-label">Running</div></div>
@@ -198,18 +240,22 @@
             <div id="build-jobs"></div>
           </div>
           <div class="ws-panel">
-            <span class="ws-panel-title">Alerts</span>
+            <div class="ws-panel-head">
+              <span class="ws-panel-title">Alerts</span>
+              <button type="button" class="ws-btn ws-btn-sm" id="btn-dismiss-alerts">Dismiss all</button>
+            </div>
             <div id="alerts-panel"></div>
           </div>
           <div class="ws-panel">
             <span class="ws-panel-title">Ecosystem sync</span>
-            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">Push plans &amp; PRD features → Linear, GitHub, Slack, Gmail (via Composio).</p>
+            <p class="ws-meta" style="margin-bottom:12px">Push plans &amp; PRD → Board + GitHub, Notion, Slack, Gmail, Discord (via Composio).</p>
             <button type="button" class="ws-btn ws-btn-primary ws-btn-block" id="btn-sync-all">Sync all connected tools</button>
-            <div id="sync-panel" style="margin-top:16px;font-size:0.82rem;color:var(--text-muted)"></div>
+            <div id="sync-panel" class="ws-meta" style="margin-top:16px"></div>
           </div>
           <div class="ws-panel">
-            <span class="ws-panel-title">Docs scaffold</span>
-            <pre id="build-docs" style="font-family:var(--mono);font-size:0.72rem;color:var(--text-muted);white-space:pre-wrap;max-height:200px;overflow:auto"></pre>
+            <span class="ws-panel-title">Project docs</span>
+            <div class="doc-tabs" id="doc-tabs"></div>
+            <pre id="build-docs" class="doc-viewer"></pre>
           </div>
         </div>
       </div>
@@ -219,7 +265,7 @@
     <section class="ws-view" id="view-plans">
       <header class="ws-header">
         <h1>Plans</h1>
-        <p>Agent-generated roadmaps. Check off tasks as you ship.</p>
+        <p>Agent-generated roadmaps. Check off tasks as you ship — synced to your Board.</p>
       </header>
       <div id="plans-panel"><div class="empty">No plans yet — use Agent → Plan only</div></div>
     </section>
@@ -228,7 +274,7 @@
     <section class="ws-view" id="view-history">
       <header class="ws-header">
         <h1>History</h1>
-        <p>Run log with summaries, KV savings, and turn traces.</p>
+        <p>Run log with summaries, KV savings, actions taken, and turn traces.</p>
       </header>
       <div class="ws-grid">
         <div class="ws-panel">
@@ -240,6 +286,27 @@
       </div>
     </section>
   </main>
+
+  <!-- Board card modal -->
+  <div id="modal-overlay" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-labelledby="modal-title">
+      <div class="modal-head">
+        <h2 id="modal-title">Edit card</h2>
+        <button type="button" class="modal-close" id="modal-close" aria-label="Close">×</button>
+      </div>
+      <input type="hidden" id="modal-card-id" />
+      <label class="ws-label" for="modal-card-title">Title</label>
+      <input class="ws-input" id="modal-card-title" type="text" />
+      <label class="ws-label" for="modal-card-desc">Description</label>
+      <textarea class="ws-textarea" id="modal-card-desc"></textarea>
+      <label class="ws-label" for="modal-card-col">Column</label>
+      <select class="ws-select" id="modal-card-col"></select>
+      <div class="modal-actions">
+        <button type="button" class="ws-btn ws-btn-danger" id="modal-delete">Delete</button>
+        <button type="button" class="ws-btn ws-btn-primary" id="modal-save">Save</button>
+      </div>
+    </div>
+  </div>
 
   <script src="/local/assets/js/dashboard.js"></script>
 </body>
