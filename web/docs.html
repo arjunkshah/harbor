@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body data-page="docs">
   <div class="noise"></div>
@@ -15,7 +15,7 @@
 
   <nav class="nav">
     <div class="container nav-inner">
-      <a href="/" class="logo">⚓ Harbor</a>
+      <a href="index.html" class="logo">⚓ Harbor</a>
       <div class="nav-links" id="nav-links"></div>
     </div>
   </nav>
@@ -90,8 +90,9 @@ HARBOR_DEMO=0</pre>
       <h2 id="stack">Stack integration</h2>
       <h3>Tavily</h3>
       <p>Search, multi-search, URL extract, Q&A synthesis, company intel, social pulse — all used in agent gather phase.</p>
-      <h3>Composio</h3>
-      <p>GitHub, Slack, Linear, Gmail — read during gather, write during act (Slack digest, Linear tickets).</p>
+      <h3>GitHub (whole account)</h3>
+      <p>Connect GitHub once via Composio OAuth in <code>harbor setup</code>. Harbor searches <strong>all repos you can access</strong> — PRs needing your review, issues assigned to you, recent commits. No repo config required.</p>
+      <p>Optional: set <code>GITHUB_OWNER</code> + <code>GITHUB_REPO</code> in <code>.env</code> to scope to one repo only.</p>
       <h3>Nebius Token Factory</h3>
       <p>OpenAI-compatible chat completions with tool calling every agent turn.</p>
       <h3>SuperCompress</h3>
@@ -112,12 +113,13 @@ HARBOR_DEMO=0</pre>
 
   <footer>
     <div class="container">
-      <a href="/">Home</a>
-      <a href="/dashboard">Dashboard</a>
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
       <a href="https://github.com/arjunkshah/harbor">GitHub</a>
       <p style="margin-top:12px">Harbor · MIT · BuilderShip 2026</p>
     </div>
   </footer>
-  <script src="/assets/js/shared.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/shared.js"></script>
 </body>
 </html>

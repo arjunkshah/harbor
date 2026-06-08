@@ -24,7 +24,7 @@ function esc(s) {
 
 async function loadStatus() {
   const res = await fetch("/api/dashboard/status");
-  if (!res.ok) throw new Error("API unavailable — run: harbor serve");
+  if (!res.ok) throw new Error("Start the local server: harbor serve");
   return res.json();
 }
 
@@ -60,7 +60,11 @@ function renderConfig(config) {
     <div class="status-row"><span>Nebius</span><span>${k.nebius ? "✓ " + esc(config.masked?.NEBIUS_API_KEY) : "✗ not set"}</span></div>
     <div class="status-row"><span>Composio</span><span>${k.composio ? "✓ " + esc(config.masked?.COMPOSIO_API_KEY) : "✗ not set"}</span></div>
     <div class="status-row"><span>Tavily</span><span>${k.tavily ? "✓ " + esc(config.masked?.TAVILY_API_KEY) : "✗ not set"}</span></div>
-    <div class="status-row"><span>GitHub</span><span>${esc(config.github_owner || "—")}/${esc(config.github_repo || "—")}</span></div>
+    <div class="status-row"><span>GitHub</span><span>${
+      config.github_owner && config.github_repo
+        ? esc(config.github_owner) + "/" + esc(config.github_repo)
+        : "Whole account (OAuth)"
+    }</span></div>
     <div class="status-row"><span>User ID</span><span style="font-family:var(--mono);font-size:0.78rem">${esc(config.harbor_user_id)}</span></div>
   `;
 }
@@ -146,8 +150,16 @@ async function refresh() {
       setupBanner.style.display = live ? "none" : "block";
     }
   } catch (e) {
-    document.getElementById("setup-banner").innerHTML = `
-      <div class="alert alert-warn">Server not reachable. Run <code>harbor serve</code> or <code>harbor dashboard</code> in your terminal.</div>`;
+    const banner = document.getElementById("setup-banner");
+    if (banner) {
+      banner.innerHTML = `
+      <div class="alert alert-warn">
+        ${esc(e.message)}<br><br>
+        <code>cd harbor && source .venv/bin/activate && harbor serve</code>
+        then open <a href="http://127.0.0.1:8787/dashboard">localhost:8787/dashboard</a>
+        · <a href="docs.html#setup">setup docs</a>
+      </div>`;
+    }
   }
 
   const { runs } = await loadRuns();

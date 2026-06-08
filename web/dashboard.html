@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body data-page="dashboard">
   <div class="noise"></div>
@@ -16,16 +16,16 @@
 
   <nav class="nav">
     <div class="container nav-inner">
-      <a href="/" class="logo">⚓ Harbor</a>
+      <a href="index.html" class="logo">⚓ Harbor</a>
       <div class="nav-links" id="nav-links"></div>
     </div>
   </nav>
 
   <main class="container">
     <div id="setup-banner">
-      <div class="alert alert-warn" style="margin-top:24px">
-        API keys not configured. Run <code>harbor setup</code> in your terminal, then refresh.
-        <a href="/docs#setup" style="margin-left:8px">Setup docs →</a>
+      <div class="alert alert-info" style="margin-top:24px" id="static-notice">
+        <strong>Live dashboard</strong> runs on your machine (<code>harbor serve</code> → localhost:8787/dashboard).
+        This page connects to the API when the server is running.
       </div>
     </div>
 
@@ -102,12 +102,13 @@
 
   <footer>
     <div class="container">
-      <a href="/docs">Docs</a>
+      <a href="docs.html">Docs</a>
       <a href="https://github.com/arjunkshah/harbor">GitHub</a>
       <p style="margin-top:12px">Local dashboard · requires <code>harbor serve</code></p>
     </div>
   </footer>
-  <script src="/assets/js/shared.js"></script>
-  <script src="/assets/js/dashboard.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/shared.js"></script>
+  <script src="assets/js/dashboard.js"></script>
 </body>
 </html>

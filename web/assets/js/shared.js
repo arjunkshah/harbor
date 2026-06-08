@@ -1,9 +1,10 @@
-/** Shared nav + footer helpers */
+/** Shared nav + footer — works on GitHub Pages (/harbor/) and local serve */
 function harborNav(active) {
+  const u = window.harborUrl;
   const links = [
-    { href: "/", label: "Home", id: "home" },
-    { href: "/docs", label: "Docs", id: "docs" },
-    { href: "/dashboard", label: "Dashboard", id: "dashboard" },
+    { href: u(""), label: "Home", id: "home" },
+    { href: u("docs.html"), label: "Docs", id: "docs" },
+    { href: u("dashboard.html"), label: "Dashboard", id: "dashboard" },
     { href: "https://github.com/arjunkshah/harbor", label: "GitHub", external: true },
   ];
   return links
@@ -17,11 +18,11 @@ function harborNav(active) {
 
 function injectNav(active) {
   const el = document.getElementById("nav-links");
-  if (el) {
-    el.innerHTML =
-      harborNav(active) +
-      ' <a href="/dashboard" class="btn btn-primary" style="padding:8px 16px;font-size:0.85rem">Open dashboard</a>';
-  }
+  if (!el) return;
+  const dash = window.harborUrl("dashboard.html");
+  el.innerHTML =
+    harborNav(active) +
+    ` <a href="${dash}" class="btn btn-primary" style="padding:8px 16px;font-size:0.85rem">Open dashboard</a>`;
 }
 
 document.addEventListener("DOMContentLoaded", () => injectNav(document.body.dataset.page || ""));

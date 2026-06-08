@@ -37,9 +37,12 @@ class GitHubSnapshot:
             for issue in self.open_issues[:10]:
                 lines.append(f"- #{issue.get('number')} {issue.get('title')}")
         if self.recent_commits:
-            lines.append("\n### Recent commits")
+            lines.append("\n### Recent commits (across your repos)")
             for c in self.recent_commits[:8]:
-                lines.append(f"- {c.get('sha', '')[:7]} {c.get('message', c.get('commit', {}).get('message', ''))[:80]}")
+                repo = c.get("_repo", c.get("repository", {}).get("full_name", ""))
+                msg = c.get("message", c.get("commit", {}).get("message", ""))[:80]
+                prefix = f"[{repo}] " if repo else ""
+                lines.append(f"- {c.get('sha', '')[:7]} {prefix}{msg}")
         return "\n".join(lines) if len(lines) > 1 else "## GitHub\nNo data."
 
 
@@ -158,14 +161,17 @@ class ComposioHub:
             if "data" in data:
                 inner = data["data"]
                 if isinstance(inner, dict):
-                    for key in ("pull_requests", "issues", "items", "issues_list", "messages", "commits"):
+                    for key in (
+                        "pull_requests", "issues", "items", "issues_list",
+                        "messages", "commits", "repositories", "search_results",
+                    ):
                         if key in inner and isinstance(inner[key], list):
                             return inner[key]
                     if "response_data" in inner and isinstance(inner["response_data"], list):
                         return inner["response_data"]
                 if isinstance(inner, list):
                     return inner
-            for key in ("pull_requests", "issues", "items", "messages", "commits"):
+            for key in ("pull_requests", "issues", "items", "messages", "commits", "repositories"):
                 if key in data and isinstance(data[key], list):
                     return data[key]
         if isinstance(data, list):
@@ -173,32 +179,57 @@ class ComposioHub:
         return []
 
     def gather_github(self) -> GitHubSnapshot:
-        owner = self.settings.github_owner
-        repo = self.settings.github_repo
+        """Account-wide GitHub via Composio OAuth — optional owner/repo narrows scope."""
+        owner = self.settings.github_owner.strip() if self.settings.github_owner else ""
+        repo = self.settings.github_repo.strip() if self.settings.github_repo else ""
         snap = GitHubSnapshot()
-        if not owner or not repo:
-            prs = self._safe_list(
-                "GITHUB_LIST_PULL_REQUESTS",
-                {"owner": owner or "octocat", "repo": repo or "Hello-World", "state": "open"},
-            )
-        else:
+
+        if owner and repo:
             prs = self._safe_list(
                 "GITHUB_LIST_PULL_REQUESTS",
                 {"owner": owner, "repo": repo, "state": "open"},
             )
-        snap.prs_needing_review = [p for p in prs if p.get("draft") is not True][:15]
+            snap.prs_needing_review = [p for p in prs if p.get("draft") is not True][:15]
+            snap.open_issues = self._safe_list(
+                "GITHUB_LIST_REPOSITORY_ISSUES",
+                {"owner": owner, "repo": repo, "state": "open"},
+            )[:15]
+            snap.recent_commits = self._safe_list(
+                "GITHUB_LIST_COMMITS",
+                {"owner": owner, "repo": repo, "per_page": 10},
+            )[:10]
+            return snap
 
-        issues = self._safe_list(
-            "GITHUB_LIST_REPOSITORY_ISSUES",
-            {"owner": owner or "octocat", "repo": repo or "Hello-World", "state": "open"},
-        )
-        snap.open_issues = issues[:15]
+        # Whole connected GitHub account (OAuth — no repo config required)
+        snap.prs_needing_review = self._safe_list(
+            "GITHUB_FIND_PULL_REQUESTS",
+            {"q": "is:open is:pr review-requested:@me archived:false", "per_page": 20},
+        )[:20]
 
-        commits = self._safe_list(
-            "GITHUB_LIST_COMMITS",
-            {"owner": owner or "octocat", "repo": repo or "Hello-World", "per_page": 10},
+        snap.open_issues = self._safe_list(
+            "GITHUB_FIND_PULL_REQUESTS",
+            {"q": "is:open is:issue assignee:@me archived:false", "per_page": 15},
+        )[:15]
+
+        repos = self._safe_list(
+            "GITHUB_FIND_REPOSITORIES",
+            {"q": "sort:updated fork:true", "per_page": 8},
         )
-        snap.recent_commits = commits[:10]
+        for r in repos:
+            full = r.get("full_name") or r.get("name", "")
+            if "/" not in full:
+                continue
+            o, rn = full.split("/", 1)
+            commits = self._safe_list(
+                "GITHUB_LIST_COMMITS",
+                {"owner": o, "repo": rn, "per_page": 2},
+            )
+            for c in commits:
+                c["_repo"] = full
+            snap.recent_commits.extend(commits)
+            if len(snap.recent_commits) >= 10:
+                break
+        snap.recent_commits = snap.recent_commits[:10]
         return snap
 
     def gather_linear(self) -> LinearSnapshot:

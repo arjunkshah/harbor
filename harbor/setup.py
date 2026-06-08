@@ -26,8 +26,8 @@ ENV_FIELDS = [
     ("TAVILY_API_KEY", "Tavily API key", True, "https://app.tavily.com"),
     ("NEBIUS_MODEL", "Nebius model ID", False, "moonshotai/Kimi-K2-Instruct-0905"),
     ("HARBOR_USER_ID", "Composio user ID (unique per builder)", False, "harbor-builder-001"),
-    ("GITHUB_OWNER", "GitHub org or username", False, ""),
-    ("GITHUB_REPO", "GitHub repository name", False, ""),
+    ("GITHUB_OWNER", "Optional: limit GitHub to one org/user (leave blank = whole account)", False, ""),
+    ("GITHUB_REPO", "Optional: limit to one repo (requires GITHUB_OWNER)", False, ""),
     ("SLACK_CHANNEL_ID", "Slack channel ID (C…)", False, ""),
     ("LINEAR_TEAM_ID", "Linear team UUID", False, ""),
 ]

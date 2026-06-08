@@ -37,16 +37,13 @@ harbor setup
 
 ### Web app
 
-| URL | What |
-|-----|------|
-| `/` | Marketing landing |
-| `/docs` | Setup & integration docs |
-| `/dashboard` | Your runs, health, trigger briefs |
-| `/api/reference` | OpenAPI |
+**Public site (GitHub Pages):** https://arjunkshah.github.io/harbor/
+
+**Local dashboard** (runs workflows — needs API keys):
 
 ```bash
 harbor serve
-# http://localhost:8787
+# http://localhost:8787/dashboard
 ```
 
 ---
