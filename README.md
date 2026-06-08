@@ -2,7 +2,10 @@
 
 **Autonomous builder workspace for vibe coders** — ideate, queue Codex/Claude Code, connect your stack, ship.
 
-📦 **https://github.com/arjunkshah/harbor**
+📦 **https://github.com/arjunkshah/harbor**  
+🧠 **SuperCompress memory layer:** https://github.com/arjunkshah/supercompress
+
+Harbor imports [SuperCompress](https://github.com/arjunkshah/supercompress) as the agent memory layer between Tavily/Composio gather and Nebius inference. Product spec: [docs/PRODUCT.md](docs/PRODUCT.md).
 
 ---
 
@@ -70,6 +73,7 @@ harbor serve
 | `harbor connect github --wait` | OAuth-link GitHub (waits until done) |
 | `harbor connect-all` | Connect all enabled apps |
 | `harbor demo` | No API keys required |
+| **`python examples/openclaw_agent_loop/run.py`** | Sponsor-stack demo (Tavily → Composio → SuperCompress → Nebius) |
 
 ---
 
