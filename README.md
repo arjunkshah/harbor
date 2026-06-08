@@ -10,17 +10,28 @@ Harbor runs morning briefs and incident response across **Tavily**, **Composio**
 
 ## For users (start here)
 
+**Already in this folder?** Do NOT `git clone` into `./harbor` — that name is the Python package.
+
 ```bash
-git clone https://github.com/arjunkshah/harbor.git && cd harbor
-pip install -e .
-harbor setup          # ← interactive API keys, .env, OAuth, doctor
-harbor dashboard      # ← pretty UI for your runs
+cd /path/to/buildersshipbycursor   # repo root (pyproject.toml here)
+chmod +x bootstrap.sh && ./bootstrap.sh
+source .venv/bin/activate
+harbor setup
+harbor dashboard
 ```
 
-Or one-shot install + demo:
+Fresh clone elsewhere:
 
 ```bash
-./scripts/install_and_demo.sh
+git clone https://github.com/arjunkshah/harbor.git my-harbor && cd my-harbor
+./bootstrap.sh --setup
+```
+
+Or:
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+python3 -m pip install -e .
 harbor setup
 ```
 
