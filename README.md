@@ -1,67 +1,107 @@
-# SuperCompress Agent Memory Layer
+# Harbor
 
-**Fresh start.** The previous Harbor builder workspace lives in:
+**Autonomous builder workspace for vibe coders** — ideate, queue Codex/Claude Code, connect your stack, ship.
 
-```
-archive/harbor-builder-workspace/
-```
-
-Move that folder out when you're ready. Everything from the old project (dashboard, board, build pipeline, tests, site) is self-contained there.
+📦 **https://github.com/arjunkshah/harbor**
 
 ---
 
-## What this repo is now
+## For users (start here)
 
-**Tier A — SuperCompress as the agent memory layer**
-
-Agent loops break at turn 4 when Tavily + Composio inflate context. SuperCompress compresses before each model call.
-
-```
-Tavily (gather) → Composio GitHub (act) → SuperCompress (memory) → Nebius (inference)
-```
-
-Judges need **runnable code**, not architecture prose.
-
----
-
-## Run the sponsor-stack demo
+**Already in this folder?** Do NOT `git clone` into `./harbor` — that name is the Python package.
 
 ```bash
-cd archive/harbor-builder-workspace
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-python scripts/train_memory_checkpoint.py --fast
-
-# No API keys
-HARBOR_DEMO=1 python examples/openclaw_agent_loop/run.py
-
-# Live (after .env + OAuth)
-python examples/openclaw_agent_loop/run.py --live
+cd /path/to/buildersshipbycursor   # repo root (pyproject.toml here)
+chmod +x bootstrap.sh && ./bootstrap.sh
+source .venv/bin/activate
+harbor setup
+harbor dashboard
 ```
 
-See [archive/harbor-builder-workspace/examples/openclaw_agent_loop/README.md](archive/harbor-builder-workspace/examples/openclaw_agent_loop/README.md).
+Fresh clone elsewhere:
+
+```bash
+git clone https://github.com/arjunkshah/harbor.git my-harbor && cd my-harbor
+./bootstrap.sh --setup
+```
+
+Or:
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+python3 -m pip install -e .
+harbor setup
+```
+
+### Web
+
+**Project site (GitHub Pages)** — what Harbor is, how it works, docs, install:  
+https://arjunkshah.github.io/harbor/
+
+**Local dashboard** — integrations, run history, live briefs (not on GitHub Pages):
+
+```bash
+harbor serve
+# → http://127.0.0.1:8787/dashboard
+```
 
 ---
 
-## Archive contents
+## Commands
 
-| Item | Path |
-|------|------|
-| Full Harbor codebase | `archive/harbor-builder-workspace/harbor/` |
-| Dashboard + site | `archive/harbor-builder-workspace/local/`, `web/` |
-| Tests + CI | `archive/harbor-builder-workspace/tests/`, `.github/` |
-| OpenClaw bridge | `archive/harbor-builder-workspace/openclaw/` |
-| Agent loop demo | `archive/harbor-builder-workspace/examples/openclaw_agent_loop/` |
-
-Read [archive/harbor-builder-workspace/ARCHIVE_README.md](archive/harbor-builder-workspace/ARCHIVE_README.md).
+| Command | Description |
+|---------|-------------|
+| **`harbor setup`** | Interactive wizard — API keys → `.env` → checkpoint → Composio OAuth → doctor |
+| `harbor integrations list` | See enabled vs OAuth-connected integrations |
+| `harbor integrations set github,gmail,notion` | Choose which Composio apps Harbor uses |
+| `harbor dashboard` | Open local workspace (starts server) |
+| `harbor serve` | Local server — dashboard + API (not GitHub Pages) |
+| `harbor run "…"` | General builder agent task |
+| `harbor run "…" --plan` | Plan only → `.harbor/plans.json` |
+| **`harbor build ideate "…"`** | Refine idea → `docs/harbor/ideation.md` |
+| **`harbor build approve`** | PRD + feature docs + queue Codex/Claude |
+| **`harbor build queue "…"`** | Queue custom coding prompt |
+| **`harbor build status --watch`** | Monitor queue + alerts |
+| **`harbor sync all`** | Sync plans + PRD to Harbor Board + connected apps (GitHub, Notion, Slack, Gmail, …) |
+| **`harbor sync status`** | Ecosystem sync registry |
+| `harbor brief` | Morning brief workflow |
+| `harbor incident "…"` | Incident commander |
+| `harbor doctor --fix` | Migrate deprecated settings + verify stack |
+| `harbor connect github --wait` | OAuth-link GitHub (waits until done) |
+| `harbor connect-all` | Connect all enabled apps |
+| `harbor demo` | No API keys required |
 
 ---
 
-## Next steps (fresh project)
+## API keys (BuilderShip credits)
 
-1. `mv archive/harbor-builder-workspace ~/harbor-archive` (or wherever)
-2. Rebuild root around `examples/openclaw_agent_loop` + minimal `harbor/memory`
-3. Record demo: show KV savings at turn 4 vs FIFO
-4. OpenClaw hook via `/openclaw/chat` (in archive server)
+See **[docs/CREDITS.md](docs/CREDITS.md)** — register at [ship.builders](https://ship.builders), then get keys from Nebius, Composio, Tavily.
 
-GitHub history for the old work: [github.com/arjunkshah/harbor](https://github.com/arjunkshah/harbor)
+`harbor setup` prompts for all keys and writes `.env` for you.
+
+---
+
+## Architecture
+
+```
+User → Dashboard / CLI
+         → Harbor Board (kanban — primary planning surface)
+         → Tavily (research)
+         → Composio (GitHub · Gmail · Slack · Notion · …)
+         → SuperCompress (memory)
+         → Nebius (inference + tools)
+         → Composio actions + Gmail sync (send by default)
+         → .harbor/runs.json (history for dashboard)
+```
+
+---
+
+## Docs
+
+- [docs/SETUP.md](docs/SETUP.md)
+- [docs/CREDITS.md](docs/CREDITS.md)
+- [SUBMISSION.md](SUBMISSION.md)
+
+## License
+
+MIT
