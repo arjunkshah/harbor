@@ -5,10 +5,11 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import List
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from harbor.integrations import SOLO_DEFAULT_TOOLKITS
+from harbor.nebius_models import DEFAULT_NEBIUS_MODEL, normalize_nebius_model
 
 
 class Settings(BaseSettings):
@@ -19,7 +20,7 @@ class Settings(BaseSettings):
     )
 
     nebius_api_key: str = ""
-    nebius_model: str = "moonshotai/Kimi-K2-Instruct-0905"
+    nebius_model: str = Field(default=DEFAULT_NEBIUS_MODEL, validation_alias="NEBIUS_MODEL")
     nebius_base_url: str = "https://api.tokenfactory.nebius.com/v1/"
 
     composio_api_key: str = ""
@@ -48,6 +49,11 @@ class Settings(BaseSettings):
     harbor_gmail_sync_mode: str = Field(default="send", validation_alias="HARBOR_GMAIL_SYNC_MODE")
     harbor_gmail_to: str = Field(default="me", validation_alias="HARBOR_GMAIL_TO")
     harbor_auto_sync: bool = Field(default=True, validation_alias="HARBOR_AUTO_SYNC")
+
+    @field_validator("nebius_model", mode="before")
+    @classmethod
+    def _normalize_nebius_model(cls, v: object) -> str:
+        return normalize_nebius_model(str(v) if v is not None else "")
 
     @property
     def demo_mode(self) -> bool:

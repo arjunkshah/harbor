@@ -710,7 +710,23 @@ async function connectToolkit(slug) {
     toast(`${slug} is already connected`);
     return refresh();
   }
-  if (data.redirect_url) window.open(data.redirect_url, "_blank");
+  if (data.redirect_url) {
+    window.open(data.redirect_url, "_blank");
+    toast(`Complete ${slug} OAuth in browser — refreshing status…`);
+    for (let i = 0; i < 40; i++) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const r = await fetch("/api/dashboard/integrations/refresh", { method: "POST" });
+      const j = await r.json();
+      const row = (j.toolkits || []).find((t) => t.slug === slug);
+      if (row?.connected) {
+        renderIntegrations(j.toolkits);
+        toast(`${slug} connected`);
+        return;
+      }
+    }
+    await refresh();
+    toast(`${slug} — finish OAuth, then click Refresh`, "error");
+  }
 }
 
 async function activateProject(id) {
@@ -940,6 +956,15 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-agent-plan")?.addEventListener("click", () => runAgent(true));
   document.getElementById("btn-refresh")?.addEventListener("click", () => refresh().then(() => toast("Refreshed")));
   document.getElementById("btn-save-integrations")?.addEventListener("click", () => saveIntegrations().catch((e) => toast(e.message, "error")));
+  document.getElementById("btn-refresh-oauth")?.addEventListener("click", () =>
+    fetch("/api/dashboard/integrations/refresh", { method: "POST" })
+      .then((r) => r.json())
+      .then((j) => {
+        renderIntegrations(j.toolkits);
+        toast("OAuth status refreshed");
+      })
+      .catch((e) => toast(e.message, "error"))
+  );
   document.getElementById("btn-new-project")?.addEventListener("click", () => newProject().catch((e) => toast(e.message, "error")));
   document.getElementById("btn-save-project")?.addEventListener("click", () => saveProject().catch((e) => toast(e.message, "error")));
   document.getElementById("project-select")?.addEventListener("change", (e) => activateProject(e.target.value).catch((err) => toast(err.message, "error")));

@@ -151,6 +151,20 @@ def dashboard_integrations() -> Dict[str, Any]:
     return {"toolkits": integration_catalog(connected=connected)}
 
 
+@app.post("/api/dashboard/integrations/refresh")
+def dashboard_integrations_refresh() -> Dict[str, Any]:
+    from harbor.composio import get_composio
+
+    hub = get_composio()
+    hub.invalidate_cache()
+    connected = hub.integration_status()
+    summary = hub.connection_summary()
+    return {
+        "toolkits": integration_catalog(connected=connected),
+        "connection": summary,
+    }
+
+
 @app.put("/api/dashboard/integrations")
 def dashboard_integrations_update(body: IntegrationsBody) -> Dict[str, Any]:
     from harbor.composio import get_composio

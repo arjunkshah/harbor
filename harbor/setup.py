@@ -25,7 +25,7 @@ ENV_FIELDS = [
     ("NEBIUS_API_KEY", "Nebius Token Factory API key", True, "https://tokenfactory.nebius.com"),
     ("COMPOSIO_API_KEY", "Composio API key", True, "https://dashboard.composio.dev"),
     ("TAVILY_API_KEY", "Tavily API key", True, "https://app.tavily.com"),
-    ("NEBIUS_MODEL", "Nebius model ID", False, "moonshotai/Kimi-K2-Instruct-0905"),
+    ("NEBIUS_MODEL", "Nebius model ID", False, "moonshotai/Kimi-K2.5"),
     ("HARBOR_USER_ID", "Composio user ID (unique per builder)", False, "harbor-builder-001"),
     (
         "COMPOSIO_TOOLKITS",
@@ -94,21 +94,30 @@ def _mask(value: str) -> str:
     return value[:4] + "…" + value[-4:]
 
 
-def _connect_toolkit(composio, slug: str) -> None:
+def _connect_toolkit(composio, slug: str, *, wait: bool = False) -> None:
     result = composio.auth_connect(slug)
     if result.already_connected:
         console.print(f"  [green]✓ {slug} already connected[/green]\n")
-    elif result.redirect_url:
+        return
+    if result.redirect_url:
         console.print(f"  → {result.redirect_url}\n")
         try:
             webbrowser.open(result.redirect_url)
         except Exception:
             pass
-        console.print("[dim]  Complete OAuth in your browser, then return here.[/dim]\n")
+        if wait:
+            console.print("[dim]  Waiting for OAuth in browser (up to 3 min)…[/dim]")
+            waited = composio.wait_for_connection(slug)
+            if waited.already_connected:
+                console.print(f"  [green]✓ {slug} connected[/green]\n")
+                return
+            console.print(f"  [yellow]! {waited.error or 'OAuth not completed yet'}[/yellow]\n")
+        else:
+            console.print("[dim]  Complete OAuth in your browser, then run harbor doctor.[/dim]\n")
     else:
         console.print(f"  [red]✗ {result.error or 'Could not get connect link'}[/red]")
         console.print(
-            f"  [dim]Try: harbor connect {slug}[/dim] or https://dashboard.composio.dev\n"
+            f"  [dim]Try: harbor connect {slug} --wait[/dim] or https://dashboard.composio.dev\n"
         )
 
 
@@ -197,8 +206,8 @@ def run_setup(*, open_dashboard: bool = True, skip_connect: bool = False) -> boo
     if not skip_connect:
         console.print("\n[bold]Step 3 — Connect your apps[/bold] (OAuth in browser)\n")
         console.print(
-            "[dim]Harbor works great with just GitHub. Linear + Gmail are optional. "
-            "Slack is only for team broadcasts — solo builders can skip it.[/dim]\n"
+            "[dim]Harbor works great with GitHub + Gmail. Add Notion or Slack when you need them. "
+            "Complete OAuth in the browser — Harbor polls until linked.[/dim]\n"
         )
         if updated.get("COMPOSIO_API_KEY"):
             from harbor.composio import get_composio
@@ -217,7 +226,7 @@ def run_setup(*, open_dashboard: bool = True, skip_connect: bool = False) -> boo
                 prompt = f"  Connect [cyan]{info.label}[/cyan]? [dim]{info.blurb}[/dim]"
                 console.print(prompt)
                 if Confirm.ask(f"  Connect {info.slug} now?", default=default_yes):
-                    _connect_toolkit(composio, info.slug)
+                    _connect_toolkit(composio, info.slug, wait=True)
         else:
             console.print("[yellow]  Skip — add COMPOSIO_API_KEY first[/yellow]")
 

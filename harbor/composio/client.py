@@ -559,6 +559,41 @@ class ComposioHub:
         result = self.auth_connect(toolkit)
         return result.redirect_url
 
+    def wait_for_connection(
+        self,
+        toolkit: str,
+        *,
+        timeout_sec: int = 180,
+        poll_sec: float = 3.0,
+    ) -> ConnectResult:
+        """Poll until toolkit OAuth completes or timeout."""
+        import time
+
+        slug = toolkit.lower().strip()
+        deadline = time.time() + timeout_sec
+        while time.time() < deadline:
+            self.invalidate_cache()
+            if slug in self.connected_toolkits():
+                return ConnectResult(toolkit=slug, already_connected=True)
+            time.sleep(poll_sec)
+        return ConnectResult(
+            toolkit=slug,
+            error=f"Timed out waiting for {slug} OAuth ({timeout_sec}s). Run harbor connect {slug} again.",
+        )
+
+    def connection_summary(self) -> Dict[str, Any]:
+        """Enabled vs OAuth-linked toolkits for doctor/dashboard."""
+        enabled = self.settings.active_toolkits()
+        connected = self.integration_status()
+        linked = [s for s in enabled if connected.get(s)]
+        missing = [s for s in enabled if not connected.get(s)]
+        return {
+            "enabled": enabled,
+            "linked": linked,
+            "missing_oauth": missing,
+            "all_linked": not missing,
+        }
+
     @property
     def mcp_url(self) -> str:
         return self.session.mcp.url
@@ -579,6 +614,18 @@ class DemoComposioHub(ComposioHub):
 
     def _toolkits_for_session(self) -> List[str]:
         return self.settings.active_toolkits()
+
+    def connection_summary(self) -> Dict[str, Any]:
+        enabled = self.settings.active_toolkits()
+        connected = self.integration_status()
+        linked = [slug for slug in enabled if connected.get(slug)]
+        missing = [slug for slug in enabled if not connected.get(slug)]
+        return {
+            "enabled": enabled,
+            "linked": linked,
+            "missing_oauth": missing,
+            "all_linked": not missing,
+        }
 
     def slack_delivery_ready(self) -> bool:
         return self.settings.wants_toolkit("slack")

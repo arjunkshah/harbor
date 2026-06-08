@@ -57,10 +57,20 @@ def dashboard(
     uvicorn.run("harbor.server.app:app", host="0.0.0.0", port=port, reload=False)
 
 
+@app.callback()
+def _startup() -> None:
+    """Apply .env migrations before any command."""
+    from harbor.env_migrate import migrate_env
+
+    migrate_env(write=True)
+
+
 @app.command()
-def doctor() -> None:
-    """Verify all integrations: memory, Tavily, Composio, Nebius, OpenClaw skill."""
-    ok = run_doctor()
+def doctor(
+    fix: bool = typer.Option(False, "--fix", help="Migrate deprecated .env values (e.g. old Nebius model)"),
+) -> None:
+    """Verify all integrations: memory, Tavily, Composio, Nebius, OAuth."""
+    ok = run_doctor(fix=fix)
     raise typer.Exit(0 if ok else 1)
 
 
@@ -277,8 +287,9 @@ def integrations_cmd(
 def connect(
     toolkit: str = typer.Argument(..., help="github | gmail | slack | notion | discord | …"),
     open_browser: bool = typer.Option(True, "--open/--no-open", help="Open OAuth link in browser"),
+    wait: bool = typer.Option(False, "--wait", help="Wait until OAuth completes (up to 3 min)"),
 ) -> None:
-    """Open Composio OAuth to connect GitHub, Slack, Linear, or Gmail."""
+    """Open Composio OAuth to connect enabled apps (GitHub, Gmail, etc.)."""
     import webbrowser
 
     from harbor.composio import get_composio
@@ -306,6 +317,33 @@ def connect(
             webbrowser.open(result.redirect_url)
         except Exception:
             pass
+
+    if wait:
+        console.print("[dim]Waiting for OAuth (up to 3 min)…[/dim]")
+        waited = c.wait_for_connection(toolkit)
+        if waited.already_connected:
+            console.print(Panel(f"[green]✓ {toolkit} connected[/green] for [cyan]{uid}[/cyan]"))
+            return
+        console.print(Panel(f"[yellow]OAuth not finished[/yellow]\n\n{waited.error}"))
+        raise typer.Exit(code=1)
+
+
+@app.command("connect-all")
+def connect_all(
+    wait: bool = typer.Option(True, "--wait/--no-wait", help="Wait for each OAuth flow"),
+) -> None:
+    """Connect all enabled toolkits that are not OAuth-linked yet."""
+    from harbor.composio import get_composio
+
+    c = get_composio()
+    summary = c.connection_summary()
+    missing = summary.get("missing_oauth") or []
+    if not missing:
+        console.print("[green]All enabled integrations are already connected.[/green]")
+        return
+    for slug in missing:
+        console.print(f"\n[bold]Connecting {slug}…[/bold]")
+        connect(slug, open_browser=True, wait=wait)
 
 
 @app.command("serve")

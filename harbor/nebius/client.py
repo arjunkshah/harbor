@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 from openai import OpenAI
 
 from harbor.config import Settings, get_settings
+from harbor.nebius_models import FALLBACK_NEBIUS_MODELS, normalize_nebius_model
 
 
 @dataclass
@@ -38,10 +39,11 @@ class NebiusClient:
 
     @property
     def model(self) -> str:
-        return self.settings.nebius_model
+        return normalize_nebius_model(self.settings.nebius_model)
 
-    def chat(
+    def _chat_with_model(
         self,
+        model: str,
         messages: List[Dict[str, Any]],
         *,
         tools: Optional[List[Dict[str, Any]]] = None,
@@ -49,7 +51,7 @@ class NebiusClient:
         max_tokens: int = 4096,
     ) -> InferenceResult:
         kwargs: Dict[str, Any] = {
-            "model": self.model,
+            "model": model,
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
@@ -57,7 +59,6 @@ class NebiusClient:
         if tools:
             kwargs["tools"] = tools
             kwargs["tool_choice"] = "auto"
-
         resp = self.client.chat.completions.create(**kwargs)
         choice = resp.choices[0]
         msg = choice.message
@@ -74,7 +75,6 @@ class NebiusClient:
                         },
                     }
                 )
-
         usage = {}
         if resp.usage:
             usage = {
@@ -82,14 +82,43 @@ class NebiusClient:
                 "completion_tokens": resp.usage.completion_tokens or 0,
                 "total_tokens": resp.usage.total_tokens or 0,
             }
-
         return InferenceResult(
             content=msg.content or "",
-            model=self.model,
+            model=model,
             usage=usage,
             tool_calls=tool_calls,
             raw=resp,
         )
+
+    def chat(
+        self,
+        messages: List[Dict[str, Any]],
+        *,
+        tools: Optional[List[Dict[str, Any]]] = None,
+        temperature: float = 0.3,
+        max_tokens: int = 4096,
+    ) -> InferenceResult:
+        primary = self.model
+        candidates = [primary] + [m for m in FALLBACK_NEBIUS_MODELS if m != primary]
+        last_exc: Optional[Exception] = None
+        for model in candidates:
+            try:
+                return self._chat_with_model(
+                    model,
+                    messages,
+                    tools=tools,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+            except Exception as exc:
+                err = str(exc).lower()
+                if "does not exist" in err or "404" in err or "not found" in err:
+                    last_exc = exc
+                    continue
+                raise
+        if last_exc:
+            raise last_exc
+        raise RuntimeError("No Nebius model available")
 
 
 class DemoNebiusClient(NebiusClient):

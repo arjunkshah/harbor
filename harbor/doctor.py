@@ -12,6 +12,7 @@ from harbor.config import Settings, get_settings
 from harbor.memory import compare_policies
 from harbor.composio import get_composio
 from harbor.nebius import get_nebius
+from harbor.nebius_models import DEFAULT_NEBIUS_MODEL
 from harbor.tavily import get_tavily
 
 console = Console()
@@ -53,43 +54,64 @@ def run_doctor_checks(settings: Settings | None = None) -> List[CheckResult]:
     except Exception as exc:
         results.append(CheckResult("Tavily search", False, str(exc)))
 
+    oauth_ok = True
+    missing_oauth: list[str] = []
     try:
         c = get_composio(s)
-        gh = c.gather_github()
+        summary = c.connection_summary()
         tools = c.get_openai_tools()
-        connected = c.integration_status()
-        linked = [name for name, ok in connected.items() if ok]
+        missing_oauth = summary.get("missing_oauth") or []
+        linked = summary.get("linked") or []
+        oauth_ok = not missing_oauth or s.demo_mode
+        if missing_oauth and not s.demo_mode:
+            detail = (
+                f"{len(tools)} tools loaded · linked: {', '.join(linked) or 'none'} · "
+                f"OAuth needed: {', '.join(missing_oauth)} — run harbor connect {' '.join(missing_oauth)}"
+            )
+        else:
+            detail = f"{len(tools)} tools loaded, connected: {', '.join(linked) or 'demo/fixtures'}"
+        results.append(CheckResult("Composio toolkits", True, detail))
+
+        if linked and not s.demo_mode:
+            gh = c.gather_github()
+            if gh.prs_needing_review or gh.open_issues or gh.recent_commits:
+                results.append(
+                    CheckResult(
+                        "GitHub snapshot",
+                        True,
+                        f"{len(gh.prs_needing_review)} PRs, {len(gh.open_issues)} issues, {len(gh.recent_commits)} commits",
+                    )
+                )
+    except Exception as exc:
+        oauth_ok = False
+        results.append(CheckResult("Composio toolkits", False, str(exc)))
+
+    if not s.demo_mode:
         results.append(
             CheckResult(
-                "Composio toolkits",
-                True,
-                f"{len(tools)} tools loaded, connected: {', '.join(linked) or 'none yet — run harbor connect github'}",
+                "Composio OAuth",
+                oauth_ok,
+                "All enabled apps linked"
+                if oauth_ok
+                else f"Run: harbor connect {' '.join(missing_oauth or ['github'])} --wait",
             )
         )
-        if gh.prs_needing_review or gh.open_issues or gh.recent_commits:
-            results.append(
-                CheckResult(
-                    "GitHub snapshot",
-                    True,
-                    f"{len(gh.prs_needing_review)} PRs, {len(gh.open_issues)} issues, {len(gh.recent_commits)} commits",
-                )
-            )
-    except Exception as exc:
-        results.append(CheckResult("Composio toolkits", False, str(exc)))
 
     try:
         n = get_nebius(s)
         resp = n.chat([{"role": "user", "content": "Reply with exactly: harbor-ok"}])
         ok = "harbor" in resp.content.lower() or s.demo_mode
+        model_note = resp.model if resp.model != s.nebius_model else s.nebius_model
         results.append(
             CheckResult(
                 "Nebius inference",
                 ok,
-                f"model={resp.model}, tokens={resp.usage.get('total_tokens', '?')}",
+                f"model={model_note}, tokens={resp.usage.get('total_tokens', '?')}",
             )
         )
     except Exception as exc:
-        results.append(CheckResult("Nebius inference", False, str(exc)))
+        hint = f" (try NEBIUS_MODEL={DEFAULT_NEBIUS_MODEL})" if not s.demo_mode else ""
+        results.append(CheckResult("Nebius inference", False, f"{exc}{hint}"))
 
     from pathlib import Path
 
@@ -113,7 +135,17 @@ def run_doctor_checks(settings: Settings | None = None) -> List[CheckResult]:
     return results
 
 
-def run_doctor(settings: Settings | None = None) -> bool:
+def run_doctor(settings: Settings | None = None, *, fix: bool = False) -> bool:
+    if fix:
+        from harbor.env_migrate import ensure_live_ready
+
+        changes = ensure_live_ready()
+        if changes:
+            console.print("[yellow]Applied .env fixes:[/yellow]")
+            for line in changes:
+                console.print(f"  • {line}")
+            get_settings.cache_clear()
+
     s = settings or get_settings()
     results = run_doctor_checks(s)
 
@@ -133,5 +165,8 @@ def run_doctor(settings: Settings | None = None) -> bool:
     if s.demo_mode:
         console.print("[dim]Run [cyan]harbor setup[/cyan] for live stack.[/dim]")
     elif not all_ok:
-        console.print("[dim]Run [cyan]harbor setup[/cyan] to fix configuration.[/dim]")
+        console.print(
+            "[dim]Run [cyan]harbor doctor --fix[/cyan] to migrate deprecated settings, "
+            "then [cyan]harbor connect github gmail[/cyan] for OAuth.[/dim]"
+        )
     return all_ok

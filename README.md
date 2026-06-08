@@ -66,7 +66,9 @@ harbor serve
 | **`harbor sync status`** | Ecosystem sync registry |
 | `harbor brief` | Morning brief workflow |
 | `harbor incident "…"` | Incident commander |
-| `harbor doctor` | Verify integrations |
+| `harbor doctor --fix` | Migrate deprecated settings + verify stack |
+| `harbor connect github --wait` | OAuth-link GitHub (waits until done) |
+| `harbor connect-all` | Connect all enabled apps |
 | `harbor demo` | No API keys required |
 
 ---
