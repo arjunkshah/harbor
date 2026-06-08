@@ -36,6 +36,7 @@ from harbor.coding.pipeline import (
     queue_custom_prompt,
 )
 from harbor.coding.notify import list_alerts, mark_alert_read
+from harbor.sync.engine import sync_project_ecosystem, sync_status
 from harbor.workflows import run_builder_task, run_incident_commander, run_morning_brief
 
 WEB_DIR = Path(__file__).resolve().parent.parent.parent / "web"
@@ -396,6 +397,19 @@ def dashboard_alert_read(alert_id: str) -> Dict[str, Any]:
     if not alert:
         raise HTTPException(404, "Alert not found")
     return {"alert": alert}
+
+
+@app.get("/api/dashboard/sync")
+def dashboard_sync_status() -> Dict[str, Any]:
+    return sync_status()
+
+
+@app.post("/api/dashboard/sync")
+def dashboard_sync_run() -> Dict[str, Any]:
+    try:
+        return sync_project_ecosystem()
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 # --- Legacy / OpenClaw ---

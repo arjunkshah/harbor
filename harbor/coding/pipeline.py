@@ -88,11 +88,23 @@ def approve_ideation(
 
     jobs = enqueue_batch(
         project,
-        [{"title": f["title"], "prompt": f["prompt"], "phase": "implement"} for f in features],
+        [
+            {"title": f["title"], "prompt": f["prompt"], "phase": "implement", "feature_index": i}
+            for i, f in enumerate(features, 1)
+        ],
         agent=chosen,
     )
 
     set_build_phase(project["id"], "building")
+
+    sync_result = {}
+    try:
+        from harbor.sync.engine import sync_approve_bundle
+
+        sync_result = sync_approve_bundle(project, features, prd_excerpt=prd_text[:800])
+    except Exception:
+        pass
+
     return {
         "project_id": project["id"],
         "prd_preview": prd_text[:1200],
@@ -101,6 +113,7 @@ def approve_ideation(
         "jobs_queued": len(jobs),
         "agent": chosen,
         "docs": read_project_files(project),
+        "ecosystem_sync": sync_result,
     }
 
 
@@ -131,4 +144,7 @@ def pipeline_status(*, project_id: Optional[str] = None) -> Dict[str, Any]:
         "jobs": list_jobs(project_id=pid, limit=20),
         "docs": read_project_files(project) if project else {},
         "alerts_unread": len(__import__("harbor.coding.notify", fromlist=["list_alerts"]).list_alerts(unread_only=True)),
+        "ecosystem_sync": __import__("harbor.sync.engine", fromlist=["sync_status"]).sync_status(
+            project_id=pid
+        ),
     }

@@ -378,6 +378,16 @@ function renderBuild(st) {
     const feats = (st.docs.features || []).join(", ");
     docsEl.textContent = `${root}\n${files.join("\n")}\nfeatures: ${feats}`;
   }
+
+  const syncEl = document.getElementById("sync-panel");
+  if (syncEl && st.ecosystem_sync) {
+    const es = st.ecosystem_sync;
+    const conn = Object.entries(es.connected || {})
+      .map(([k, v]) => `${v ? "✓" : "—"} ${k}`)
+      .join(" · ");
+    const reg = es.registry || {};
+    syncEl.innerHTML = `<p>${esc(conn)}</p><p>${reg.total || 0} synced items · auto-sync ${es.auto_sync ? "on" : "off"}</p>`;
+  }
 }
 
 async function renderAlerts() {
@@ -412,7 +422,15 @@ async function saveRepoPath() {
   });
 }
 
-async function runIdeate() {
+async function runSyncAll() {
+  flashStatus("Syncing to connected tools…");
+  const res = await fetch("/api/dashboard/sync", { method: "POST" });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Sync failed");
+  await refresh();
+  flashStatus("Ecosystem sync complete");
+}
+
   const idea = document.getElementById("ideate-input")?.value.trim();
   if (!idea) return alert("Describe your idea");
   flashStatus("Ideating…");
@@ -564,6 +582,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ["brief-company", "brief-focus"].forEach((id) => {
     document.getElementById(id)?.addEventListener("input", (e) => (e.target.dataset.touched = "1"));
   });
+  document.getElementById("btn-sync-all")?.addEventListener("click", () => runSyncAll().catch((e) => alert(e.message)));
   document.getElementById("btn-ideate")?.addEventListener("click", () => runIdeate().catch((e) => alert(e.message)));
   document.getElementById("btn-approve")?.addEventListener("click", () => runApprove().catch((e) => alert(e.message)));
   document.getElementById("btn-code-queue")?.addEventListener("click", () => runCodeQueue().catch((e) => alert(e.message)));

@@ -19,6 +19,7 @@ from harbor.setup import run_setup
 from harbor.workflows import run_builder_task, run_incident_commander, run_morning_brief
 
 build_app = typer.Typer(help="Ideate → PRD → Codex/Claude Code queue")
+sync_app = typer.Typer(help="Push Harbor state to Linear, GitHub, Slack, Gmail")
 
 app = typer.Typer(
     name="harbor",
@@ -89,6 +90,38 @@ def run_task(
 
 
 app.add_typer(build_app, name="build")
+app.add_typer(sync_app, name="sync")
+
+
+@sync_app.command("status")
+def sync_status_cmd() -> None:
+    """Show ecosystem sync registry + connected tools."""
+    from harbor.sync.engine import sync_status
+
+    st = sync_status()
+    console.print("[bold]Ecosystem sync[/bold]")
+    for slug, ok in (st.get("connected") or {}).items():
+        console.print(f"  {'[green]✓[/green]' if ok else '[dim]—[/dim]'} {slug}")
+    reg = st.get("registry") or {}
+    console.print(f"\n  Synced items: {reg.get('total', 0)}")
+    for tool, count in (reg.get("by_toolkit") or {}).items():
+        console.print(f"    {tool}: {count}")
+    gh = st.get("github_target")
+    if gh:
+        console.print(f"  GitHub target: {gh[0]}/{gh[1]}")
+
+
+@sync_app.command("all")
+def sync_all_cmd() -> None:
+    """Re-sync plans + PRD features to all connected Composio apps."""
+    from harbor.sync.engine import sync_project_ecosystem
+
+    console.print("[bold cyan]Harbor ecosystem sync[/bold cyan]\n")
+    out = sync_project_ecosystem()
+    for block in out.get("synced", []):
+        results = block.get("results", [])
+        console.print(f"  [green]✓[/green] {len(results)} actions")
+    console.print(f"\n[dim]Registry:[/dim] {out.get('registry', {}).get('total', 0)} items tracked")
 
 
 @build_app.command("agents")

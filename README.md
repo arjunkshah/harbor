@@ -62,7 +62,8 @@ harbor serve
 | **`harbor build approve`** | PRD + feature docs + queue Codex/Claude |
 | **`harbor build queue "…"`** | Queue custom coding prompt |
 | **`harbor build status --watch`** | Monitor queue + alerts |
-| **`harbor build agents`** | Detect Codex / Claude Code CLIs |
+| **`harbor sync all`** | Push plans + PRD to Linear, GitHub, Slack, Gmail |
+| **`harbor sync status`** | Ecosystem sync registry |
 | `harbor brief` | Morning brief workflow |
 | `harbor incident "…"` | Incident commander |
 | `harbor doctor` | Verify integrations |

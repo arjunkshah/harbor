@@ -116,13 +116,16 @@ def enqueue_job(
 def enqueue_batch(project: Dict[str, Any], prompts: List[Dict[str, str]], *, agent: Optional[str] = None) -> List[Dict[str, Any]]:
     out = []
     for item in prompts:
+        meta = {"title": item.get("title", "")}
+        if item.get("feature_index") is not None:
+            meta["feature_index"] = item["feature_index"]
         out.append(
             enqueue_job(
                 project,
                 item["prompt"],
                 phase=item.get("phase", "implement"),
                 agent=agent,
-                meta={"title": item.get("title", "")},
+                meta=meta,
             )
         )
     return out
@@ -282,6 +285,12 @@ def _finish_job_from_log(job: CodingJob) -> CodingJob:
             project_id=job.project_id,
             job_id=job.id,
         )
+    try:
+        from harbor.sync.engine import sync_build_job
+
+        sync_build_job(job.to_dict())
+    except Exception:
+        pass
     return job
 
 

@@ -113,7 +113,14 @@ def create_plan(
     plans = _load()
     plans.insert(0, plan)
     _save(plans)
-    return plan.to_dict()
+    plan_dict = plan.to_dict()
+    try:
+        from harbor.sync.engine import on_plan_created
+
+        on_plan_created(plan_dict)
+    except Exception:
+        pass
+    return plan_dict
 
 
 def toggle_task(plan_id: str, task_index: int) -> Optional[Dict[str, Any]]:
@@ -124,7 +131,14 @@ def toggle_task(plan_id: str, task_index: int) -> Optional[Dict[str, Any]]:
         if 0 <= task_index < len(plan.tasks):
             plan.tasks[task_index].done = not plan.tasks[task_index].done
             _save(plans)
-            return plan.to_dict()
+            plan_dict = plan.to_dict()
+            try:
+                from harbor.sync.engine import on_task_toggled
+
+                on_task_toggled(plan_id, task_index, plan.tasks[task_index].done)
+            except Exception:
+                pass
+            return plan_dict
     return None
 
 

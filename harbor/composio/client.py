@@ -401,6 +401,51 @@ class ComposioHub:
             args["team_id"] = tid
         return self.execute("LINEAR_CREATE_LINEAR_ISSUE", args)
 
+    def update_linear_issue(
+        self,
+        issue_id: str,
+        *,
+        description: Optional[str] = None,
+        title: Optional[str] = None,
+    ) -> ComposioActionResult:
+        args: Dict[str, Any] = {"issue_id": issue_id}
+        if description is not None:
+            args["description"] = description
+        if title is not None:
+            args["title"] = title
+        return self.execute("LINEAR_UPDATE_ISSUE", args)
+
+    def create_github_issue(
+        self,
+        owner: str,
+        repo: str,
+        title: str,
+        body: str,
+        *,
+        labels: Optional[List[str]] = None,
+    ) -> ComposioActionResult:
+        args: Dict[str, Any] = {
+            "owner": owner,
+            "repo": repo,
+            "title": title,
+            "body": body,
+        }
+        if labels:
+            args["labels"] = labels
+        return self.execute("GITHUB_CREATE_AN_ISSUE", args)
+
+    def create_gmail_draft(
+        self,
+        subject: str,
+        body: str,
+        *,
+        to: str = "me",
+    ) -> ComposioActionResult:
+        return self.execute(
+            "GMAIL_CREATE_EMAIL_DRAFT",
+            {"recipient": to, "subject": subject, "body": body},
+        )
+
     def draft_gmail_reply(self, thread_id: str, body: str) -> ComposioActionResult:
         return self.execute(
             "GMAIL_REPLY_TO_THREAD",
@@ -574,6 +619,31 @@ class DemoComposioHub(ComposioHub):
             "LINEAR_CREATE_LINEAR_ISSUE",
             {"title": title, "description": description, "team_id": team_id},
         )
+
+    def update_linear_issue(self, issue_id: str, *, description: Optional[str] = None, title: Optional[str] = None) -> ComposioActionResult:
+        args: Dict[str, Any] = {"issue_id": issue_id}
+        if description is not None:
+            args["description"] = description
+        if title is not None:
+            args["title"] = title
+        return self.execute("LINEAR_UPDATE_ISSUE", args)
+
+    def create_github_issue(
+        self,
+        owner: str,
+        repo: str,
+        title: str,
+        body: str,
+        *,
+        labels: Optional[List[str]] = None,
+    ) -> ComposioActionResult:
+        return self.execute(
+            "GITHUB_CREATE_AN_ISSUE",
+            {"owner": owner, "repo": repo, "title": title, "body": body, "labels": labels or []},
+        )
+
+    def create_gmail_draft(self, subject: str, body: str, *, to: str = "me") -> ComposioActionResult:
+        return self.execute("GMAIL_CREATE_EMAIL_DRAFT", {"recipient": to, "subject": subject, "body": body})
 
     def auth_connect(self, toolkit: str) -> ConnectResult:
         slug = toolkit.lower().strip()

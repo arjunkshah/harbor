@@ -39,6 +39,7 @@ def detect_coding_agents() -> List[CodingAgentInfo]:
     for agent_id, label, bins in [
         ("codex", "Codex", ["codex"]),
         ("claude", "Claude Code", ["claude"]),
+        ("opencode", "OpenCode", ["opencode"]),
         ("cursor", "Cursor Agent", ["cursor-agent", "cursor"]),
     ]:
         path = None
@@ -65,7 +66,7 @@ def resolve_agent(preferred: Optional[str] = None) -> str:
     detected = {a.id: a for a in detect_coding_agents()}
     if pref and pref in detected and detected[pref].available:
         return pref
-    for agent_id in ("codex", "claude", "cursor"):
+    for agent_id in ("codex", "claude", "opencode", "cursor"):
         if detected.get(agent_id) and detected[agent_id].available:
             return agent_id
     return "demo"
@@ -77,6 +78,8 @@ def build_argv(agent: str, prompt: str, *, workdir: Path) -> List[str]:
         return ["codex", "exec", "--full-auto", prompt]
     if agent == "claude":
         return ["claude", "-p", prompt]
+    if agent == "opencode":
+        return ["opencode", "run", prompt]
     if agent == "cursor":
         bin_path = shutil.which("cursor-agent") or shutil.which("cursor")
         if bin_path:

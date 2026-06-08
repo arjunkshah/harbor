@@ -45,6 +45,7 @@ class Settings(BaseSettings):
         validation_alias="COMPOSIO_TOOLKITS",
     )
     harbor_coding_agent: str = Field(default="auto", validation_alias="HARBOR_CODING_AGENT")
+    harbor_auto_sync: bool = Field(default=True, validation_alias="HARBOR_AUTO_SYNC")
 
     @property
     def demo_mode(self) -> bool:
