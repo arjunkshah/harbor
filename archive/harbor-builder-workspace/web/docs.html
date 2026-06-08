@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Docs — Harbor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/site.css" />
+</head>
+<body class="site" data-page="docs" data-site="public">
+  <div class="site-grain"></div>
+  <div class="site-glow site-glow--a"></div>
+
+  <nav class="site-nav">
+    <div class="container site-nav-inner">
+      <a href="index.html" class="site-logo">Harbor <strong>docs</strong></a>
+      <div class="site-nav-links" id="nav-links"></div>
+    </div>
+  </nav>
+
+  <main class="container docs-page">
+    <div class="docs-layout">
+      <aside class="docs-sidebar">
+        <a href="#setup">Setup</a>
+        <a href="#keys">API keys</a>
+        <a href="#cli">CLI commands</a>
+        <a href="#workspace">Local workspace</a>
+        <a href="#integrations">Integrations</a>
+        <a href="#why">Why not OpenClaw alone</a>
+        <a href="#submit">BuilderShip submit</a>
+      </aside>
+
+      <article class="doc-content">
+        <h1>Documentation</h1>
+        <p>Install Harbor, connect your apps, run your first agent task.</p>
+
+        <div class="doc-callout">
+          This site is the <strong>project homepage</strong> (docs + install). The
+          <strong>builder workspace</strong> — Connect, Projects, Agent, Plans, History — runs locally via
+          <code>harbor serve</code>. It is not hosted on GitHub Pages.
+        </div>
+
+        <h2 id="setup">Setup</h2>
+        <pre>git clone https://github.com/arjunkshah/harbor.git
+cd harbor
+./bootstrap.sh
+source .venv/bin/activate
+harbor setup</pre>
+        <p><code>harbor setup</code> writes <code>.env</code>, trains SuperCompress, lets you pick integrations, walks Composio OAuth, and runs <code>harbor doctor</code>.</p>
+
+        <h2 id="keys">API keys</h2>
+        <p>Register at <a href="https://ship.builders">ship.builders</a> for BuilderShip sponsor credits:</p>
+        <ul>
+          <li><strong>Nebius</strong> — <a href="https://tokenfactory.nebius.com">tokenfactory.nebius.com</a></li>
+          <li><strong>Composio</strong> — <a href="https://dashboard.composio.dev">dashboard.composio.dev</a></li>
+          <li><strong>Tavily</strong> — <a href="https://app.tavily.com">app.tavily.com</a></li>
+        </ul>
+
+        <h3>.env (minimal)</h3>
+        <pre>NEBIUS_API_KEY=
+COMPOSIO_API_KEY=
+TAVILY_API_KEY=
+COMPOSIO_TOOLKITS=github,linear,gmail
+HARBOR_USER_ID=harbor-builder-001
+HARBOR_DEMO=0</pre>
+
+        <h2 id="cli">CLI commands</h2>
+        <ul>
+          <li><code>harbor setup</code> — interactive wizard</li>
+          <li><code>harbor doctor</code> — verify stack</li>
+          <li><code>harbor run "…"</code> — general builder agent task</li>
+          <li><code>harbor run "…" --plan</code> — plan only → saves to <code>.harbor/plans.json</code></li>
+          <li><code>harbor brief</code> — morning brief</li>
+          <li><code>harbor incident "…"</code> — incident commander</li>
+          <li><code>harbor connect github</code> — Composio OAuth</li>
+          <li><code>harbor integrations list|set</code> — choose toolkits</li>
+          <li><code>harbor demo</code> — no API keys</li>
+          <li><code>harbor serve</code> — local web + workspace dashboard</li>
+          <li><code>harbor dashboard</code> — serve + open browser</li>
+        </ul>
+
+        <h2 id="workspace">Local workspace</h2>
+        <pre>harbor serve
+# open http://127.0.0.1:8787/dashboard</pre>
+        <p>The dashboard is a sidebar workspace with views:</p>
+        <ul>
+          <li><strong>Overview</strong> — stats, differentiators, stack health</li>
+          <li><strong>Board</strong> — kanban for plans, PRD features, and coding jobs</li>
+          <li><strong>Connect</strong> — toggle integrations, OAuth, Gmail sync settings</li>
+          <li><strong>Projects</strong> — what you're building</li>
+          <li><strong>Agent</strong> — run tasks, briefs, incidents</li>
+          <li><strong>Plans</strong> — agent roadmaps with checkable tasks</li>
+          <li><strong>History</strong> — run log with KV savings and turn traces</li>
+        </ul>
+
+        <h2 id="integrations">Integrations (solo-friendly)</h2>
+        <p>Harbor ships a catalog of 12 Composio toolkits. Defaults: <strong>GitHub + Gmail</strong>. Linear is optional — use Harbor Board for planning instead.</p>
+        <h3>GitHub</h3>
+        <p>OAuth to your whole account — PRs, issues, commits. No repo config required.</p>
+        <h3>Gmail</h3>
+        <p>Sync emails auto-<strong>send</strong> by default when plans/PRD sync. Switch to drafts in Connect → Settings or <code>HARBOR_GMAIL_SYNC_MODE=draft</code>.</p>
+        <h3>Also available</h3>
+        <p>Slack, Notion, Google Calendar, Sheets, Drive, Discord, Trello, Jira, Airtable, Asana, Linear (optional).</p>
+        <pre>harbor integrations set github,gmail,notion,slack
+harbor connect github
+harbor connect gmail</pre>
+
+        <h2 id="why">Why not OpenClaw alone</h2>
+        <p>Harbor is a <strong>builder control plane</strong>, not a prompt pasted into OpenClaw:</p>
+        <ul>
+          <li>Multi-sponsor orchestration loop (Tavily → Composio → SuperCompress → Nebius)</li>
+          <li>Persistent <code>.harbor/</code> state: projects, plans, briefs, run history</li>
+          <li>Integration catalog with solo-friendly defaults</li>
+          <li>Plans and general <code>harbor run</code> tasks — not just chat</li>
+        </ul>
+        <p>OpenClaw remains an optional runtime bridge via <code>/openclaw/chat</code> and SKILL.md.</p>
+
+        <h2 id="submit">BuilderShip submission</h2>
+        <ol>
+          <li>Public repo: <a href="https://github.com/arjunkshah/harbor">github.com/arjunkshah/harbor</a></li>
+          <li>Project site: <a href="https://arjunkshah.github.io/harbor/">arjunkshah.github.io/harbor</a></li>
+          <li>Demo video — tag sponsors</li>
+          <li>Submit by June 12, 23:59 PT</li>
+        </ol>
+      </article>
+    </div>
+  </main>
+
+  <footer class="container site-footer">
+    <div>
+      <a href="index.html">Home</a>
+      <a href="https://github.com/arjunkshah/harbor">GitHub</a>
+    </div>
+    <div>Harbor · MIT · BuilderShip 2026</div>
+  </footer>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/shared.js"></script>
+</body>
+</html>

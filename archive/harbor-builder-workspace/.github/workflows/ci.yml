@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          pip install -e ".[dev]"
+          python scripts/train_memory_checkpoint.py --fast
+      - name: Test
+        run: HARBOR_DEMO=1 pytest -q
+      - name: Demo smoke
+        run: HARBOR_DEMO=1 harbor demo
