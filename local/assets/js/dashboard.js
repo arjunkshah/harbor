@@ -1,4 +1,4 @@
-/** Harbor user dashboard */
+/** Harbor local dashboard — only served via harbor serve */
 let selectedRunId = null;
 let running = false;
 
@@ -24,7 +24,7 @@ function esc(s) {
 
 async function loadStatus() {
   const res = await fetch("/api/dashboard/status");
-  if (!res.ok) throw new Error("Start the local server: harbor serve");
+  if (!res.ok) throw new Error("API unavailable — is harbor serve running?");
   return res.json();
 }
 
@@ -65,8 +65,16 @@ function renderConfig(config) {
         ? esc(config.github_owner) + "/" + esc(config.github_repo)
         : "Whole account (OAuth)"
     }</span></div>
+    <div class="status-row"><span>Toolkits</span><span>${esc((config.composio_toolkits || []).join(", "))}</span></div>
+    <div class="status-row"><span>Connected</span><span>${formatIntegrations(config.integrations)}</span></div>
     <div class="status-row"><span>User ID</span><span style="font-family:var(--mono);font-size:0.78rem">${esc(config.harbor_user_id)}</span></div>
   `;
+}
+
+function formatIntegrations(integrations) {
+  if (!integrations) return "—";
+  const linked = Object.entries(integrations).filter(([, ok]) => ok).map(([k]) => k);
+  return linked.length ? linked.join(", ") : "none yet — run harbor connect github";
 }
 
 function renderStats(stats) {
@@ -136,18 +144,31 @@ function setRunning(on, label) {
   document.getElementById("run-status").textContent = on ? label : "";
 }
 
+async function refreshHealth(status) {
+  const el = document.getElementById("health-status");
+  if (!el || !status) return;
+  const cfg = status.config || {};
+  const live = cfg.keys?.nebius && cfg.keys?.composio && cfg.keys?.tavily && !cfg.demo_mode;
+  el.textContent = cfg.demo_mode
+    ? "demo mode"
+    : live
+      ? "live stack"
+      : "needs setup";
+}
+
 async function refresh() {
   try {
     const status = await loadStatus();
     renderChecks(status.checks || []);
     renderConfig(status.config || {});
     renderStats(status.stats || {});
+    await refreshHealth(status);
 
     const setupBanner = document.getElementById("setup-banner");
     const cfg = status.config || {};
     const live = cfg.keys?.nebius && cfg.keys?.composio && cfg.keys?.tavily && !cfg.demo_mode;
-    if (setupBanner) {
-      setupBanner.style.display = live ? "none" : "block";
+    if (setupBanner && live) {
+      setupBanner.style.display = "none";
     }
   } catch (e) {
     const banner = document.getElementById("setup-banner");
@@ -155,9 +176,7 @@ async function refresh() {
       banner.innerHTML = `
       <div class="alert alert-warn">
         ${esc(e.message)}<br><br>
-        <code>cd harbor && source .venv/bin/activate && harbor serve</code>
-        then open <a href="http://127.0.0.1:8787/dashboard">localhost:8787/dashboard</a>
-        · <a href="docs.html#setup">setup docs</a>
+        Run <code>harbor serve</code> in your project directory, then reload this page.
       </div>`;
     }
   }

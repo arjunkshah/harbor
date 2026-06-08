@@ -79,7 +79,7 @@ def incident(
     service: str = typer.Option("production API", help="Affected service"),
     json_out: bool = typer.Option(False, "--json", help="Emit JSON result"),
 ) -> None:
-    """Incident commander: Tavily intel → Slack + Linear + GitHub via Composio."""
+    """Incident commander: Tavily intel → connected apps (Slack/Linear/GitHub if linked)."""
     console.print(f"[bold red]Harbor Incident Commander[/bold red] — {query}\n")
     out = run_incident_commander(query, service=service)
     _print_workflow_output(out, json_out)
@@ -103,13 +103,36 @@ def demo() -> None:
 @app.command("connect")
 def connect(
     toolkit: str = typer.Argument(..., help="github | slack | linear | gmail"),
+    open_browser: bool = typer.Option(True, "--open/--no-open", help="Open OAuth link in browser"),
 ) -> None:
-    """Print Composio OAuth connect instructions for a toolkit."""
+    """Open Composio OAuth to connect GitHub, Slack, Linear, or Gmail."""
+    import webbrowser
+
     from harbor.composio import get_composio
 
     c = get_composio()
-    url = c.auth_connect_url(toolkit)
-    console.print(Panel(f"Connect [bold]{toolkit}[/bold] for user [cyan]{get_settings().harbor_user_id}[/cyan]\n\n{url}"))
+    result = c.auth_connect(toolkit)
+    uid = get_settings().harbor_user_id
+
+    if result.already_connected:
+        console.print(Panel(f"[green]✓ {toolkit}[/green] is already connected for [cyan]{uid}[/cyan]"))
+        return
+    if result.error or not result.redirect_url:
+        console.print(Panel(f"[red]Could not connect {toolkit}[/red]\n\n{result.error or 'No redirect URL'}"))
+        raise typer.Exit(code=1)
+
+    console.print(
+        Panel(
+            f"Connect [bold]{toolkit}[/bold] for user [cyan]{uid}[/cyan]\n\n"
+            f"{result.redirect_url}\n\n"
+            "[dim]Complete OAuth in your browser. Harbor uses your whole connected account.[/dim]"
+        )
+    )
+    if open_browser:
+        try:
+            webbrowser.open(result.redirect_url)
+        except Exception:
+            pass
 
 
 @app.command("serve")
@@ -144,7 +167,12 @@ def _print_workflow_output(out, json_out: bool) -> None:
 
     console.print(Panel(Markdown(r.summary or "_No summary_"), title="Brief"))
     console.print(f"\n[dim]SuperCompress KV savings: {r.memory_savings_pct:.1f}%[/dim]")
-    console.print(f"[dim]Composio actions: {len(r.actions_taken)} | Slack: {out.posted_to_slack} | Linear: {out.linear_tickets_created}[/dim]")
+    if out.brief_path:
+        console.print(f"[dim]Saved to[/dim] [cyan]{out.brief_path}[/cyan]")
+    console.print(
+        f"[dim]Composio actions: {len(r.actions_taken)} | "
+        f"Slack: {out.posted_to_slack} | Linear: {out.linear_tickets_created}[/dim]"
+    )
     console.print(f"[dim]View in dashboard:[/dim] [cyan]harbor dashboard[/cyan]")
     for t in r.turns:
         console.print(f"  [cyan]{t.phase}[/cyan] {t.detail}")

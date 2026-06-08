@@ -8,6 +8,8 @@ from typing import List
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from harbor.integrations import SOLO_DEFAULT_TOOLKITS
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -38,13 +40,27 @@ class Settings(BaseSettings):
     harbor_max_agent_turns: int = Field(default=12, validation_alias="HARBOR_MAX_AGENT_TURNS")
     harbor_log_level: str = Field(default="INFO", validation_alias="HARBOR_LOG_LEVEL")
 
-    composio_toolkits: List[str] = Field(
-        default_factory=lambda: ["github", "slack", "linear", "gmail"]
+    composio_toolkits: str = Field(
+        default=",".join(SOLO_DEFAULT_TOOLKITS),
+        validation_alias="COMPOSIO_TOOLKITS",
     )
 
     @property
     def demo_mode(self) -> bool:
         return self.harbor_demo
+
+    def active_toolkits(self) -> List[str]:
+        """Toolkits Harbor will use (configured in COMPOSIO_TOOLKITS)."""
+        return [t.strip().lower() for t in self.composio_toolkits.split(",") if t.strip()]
+
+    def wants_toolkit(self, slug: str) -> bool:
+        return slug.lower() in self.active_toolkits()
+
+    def slack_configured(self) -> bool:
+        return self.wants_toolkit("slack")
+
+    def slack_ready(self) -> bool:
+        return bool(self.slack_channel_id.strip())
 
     def has_nebius(self) -> bool:
         return bool(self.nebius_api_key.strip())

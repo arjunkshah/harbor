@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 from harbor.agent import AgentRunResult, HarborAgent
 from harbor.config import Settings, get_settings
 from harbor.store import save_run
+
+BRIEFS_DIR = Path(__file__).resolve().parent.parent / ".harbor" / "briefs"
 
 
 @dataclass
@@ -16,6 +20,18 @@ class WorkflowOutput:
     result: AgentRunResult
     posted_to_slack: bool = False
     linear_tickets_created: int = 0
+    brief_path: Optional[str] = None
+
+
+def _save_brief_markdown(summary: str, workflow: str) -> Path:
+    BRIEFS_DIR.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H%M%SZ")
+    dated = BRIEFS_DIR / f"{workflow}-{stamp}.md"
+    latest = BRIEFS_DIR / "latest.md"
+    body = summary.strip() + "\n"
+    dated.write_text(body, encoding="utf-8")
+    latest.write_text(body, encoding="utf-8")
+    return latest
 
 
 def _persist(out: WorkflowOutput, meta: Optional[dict] = None) -> WorkflowOutput:
@@ -50,6 +66,8 @@ def run_morning_brief(
         posted_to_slack=bool(slack_actions),
         linear_tickets_created=len(linear_actions),
     )
+    if result.summary:
+        out.brief_path = str(_save_brief_markdown(result.summary, "morning_brief"))
     if persist:
         _persist(out, {"company": company, "focus": focus})
     return out
@@ -72,6 +90,8 @@ def run_incident_commander(
         posted_to_slack=bool(slack_actions),
         linear_tickets_created=len(linear_actions),
     )
+    if result.summary:
+        out.brief_path = str(_save_brief_markdown(result.summary, "incident"))
     if persist:
         _persist(out, {"query": query, "service": service})
     return out

@@ -8,6 +8,17 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from harbor.config import Settings, get_settings
+from harbor.integrations import ALL_TOOLKIT_SLUGS
+
+
+@dataclass
+class ConnectResult:
+    """OAuth connect link from Composio."""
+
+    toolkit: str
+    redirect_url: Optional[str] = None
+    already_connected: bool = False
+    error: Optional[str] = None
 
 
 @dataclass
@@ -92,23 +103,70 @@ class ComposioGatherResult:
     raw_actions: List[ComposioActionResult] = field(default_factory=list)
 
     def all_context_blocks(self) -> List[str]:
-        return [
-            self.github.to_context_block(),
-            self.linear.to_context_block(),
-            self.gmail.to_context_block(),
-        ]
+        blocks: List[str] = []
+        gh = self.github.to_context_block()
+        if "No data" not in gh:
+            blocks.append(gh)
+        lin = self.linear.to_context_block()
+        if "No data" not in lin:
+            blocks.append(lin)
+        gm = self.gmail.to_context_block()
+        if "No data" not in gm:
+            blocks.append(gm)
+        return blocks or ["## Connected apps\nNo integration data yet — run `harbor connect github`."]
 
 
 class ComposioHub:
     """Session-based Composio hub with multi-toolkit gather + execute."""
 
-    TOOLKITS = ["github", "slack", "linear", "gmail"]
+    TOOLKITS = ALL_TOOLKIT_SLUGS
 
     def __init__(self, settings: Optional[Settings] = None):
         self.settings = settings or get_settings()
         self._composio = None
         self._session = None
         self._tools_cache: Optional[List[Dict[str, Any]]] = None
+        self._tools_cache_key: Optional[tuple[str, ...]] = None
+        self._connected_cache: Optional[set[str]] = None
+
+    def connected_toolkits(self) -> set[str]:
+        """OAuth-connected toolkits for this harbor user."""
+        if self._connected_cache is not None:
+            return self._connected_cache
+        slugs: set[str] = set()
+        try:
+            listed = self.composio.connected_accounts.list(
+                user_ids=[self.settings.harbor_user_id],
+                statuses=["ACTIVE"],
+                limit=50,
+            )
+            for item in getattr(listed, "items", None) or []:
+                toolkit = getattr(item, "toolkit", None)
+                slug = getattr(toolkit, "slug", None) if toolkit else None
+                if slug:
+                    slugs.add(str(slug).lower())
+        except Exception:
+            pass
+        self._connected_cache = slugs
+        return slugs
+
+    def integration_status(self) -> Dict[str, bool]:
+        connected = self.connected_toolkits()
+        return {slug: slug in connected for slug in self.TOOLKITS}
+
+    def _toolkits_for_session(self) -> List[str]:
+        """Configured toolkits that are also OAuth-connected."""
+        wanted = self.settings.active_toolkits()
+        connected = self.connected_toolkits()
+        if not connected:
+            return wanted
+        active = [slug for slug in wanted if slug in connected]
+        return active or wanted
+
+    def invalidate_cache(self) -> None:
+        self._tools_cache = None
+        self._tools_cache_key = None
+        self._connected_cache = None
 
     @property
     def composio(self):
@@ -130,15 +188,19 @@ class ComposioHub:
         return self._session
 
     def get_openai_tools(self, toolkits: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-        if self._tools_cache is not None:
+        kits = toolkits or self._toolkits_for_session()
+        cache_key = tuple(sorted(kits))
+        if self._tools_cache_key == cache_key and self._tools_cache is not None:
             return self._tools_cache
-        kits = toolkits or self.settings.composio_toolkits
+        if not kits:
+            return []
         tools = self.composio.tools.get(
             user_id=self.settings.harbor_user_id,
             toolkits=kits,
             limit=100,
         )
         self._tools_cache = tools
+        self._tools_cache_key = cache_key
         return tools
 
     def execute(self, action: str, arguments: Dict[str, Any]) -> ComposioActionResult:
@@ -233,6 +295,7 @@ class ComposioHub:
         return snap
 
     def gather_linear(self) -> LinearSnapshot:
+        """All issues visible to your Linear account (no team plan required)."""
         snap = LinearSnapshot()
         issues = self._safe_list("LINEAR_LIST_LINEAR_ISSUES", {"first": 50})
         for issue in issues:
@@ -262,17 +325,69 @@ class ComposioHub:
 
     def gather_all(self) -> ComposioGatherResult:
         raw: List[ComposioActionResult] = []
-        gh = self.gather_github()
-        lin = self.gather_linear()
-        gm = self.gather_gmail()
+        connected = self.connected_toolkits()
+        use = self.settings.active_toolkits()
+
+        gh = self.gather_github() if "github" in use and (not connected or "github" in connected) else GitHubSnapshot()
+        lin = self.gather_linear() if "linear" in use and (not connected or "linear" in connected) else LinearSnapshot()
+        gm = self.gather_gmail() if "gmail" in use and (not connected or "gmail" in connected) else GmailSnapshot()
         return ComposioGatherResult(github=gh, linear=lin, gmail=gm, raw_actions=raw)
 
+    def slack_delivery_ready(self) -> bool:
+        if not self.settings.wants_toolkit("slack"):
+            return False
+        if "slack" not in self.connected_toolkits():
+            return False
+        return bool(self.settings.slack_ready() or self._resolve_slack_channel())
+
+    def _resolve_slack_channel(self) -> Optional[str]:
+        if self.settings.slack_channel_id.strip():
+            return self.settings.slack_channel_id.strip()
+        channels = self._safe_list(
+            "SLACK_LIST_ALL_CHANNELS",
+            {"types": "public_channel,private_channel", "limit": 100},
+        )
+        for ch in channels:
+            if (ch.get("name") or "").lower() in ("general", "random", "build", "dev", "engineering"):
+                cid = ch.get("id")
+                if cid:
+                    return str(cid)
+        for ch in channels:
+            cid = ch.get("id")
+            if cid:
+                return str(cid)
+        return None
+
     def post_slack_digest(self, text: str, channel: Optional[str] = None) -> ComposioActionResult:
-        ch = channel or self.settings.slack_channel_id or "general"
+        if "slack" not in self.connected_toolkits():
+            return ComposioActionResult(
+                action="SLACK_SEND_MESSAGE",
+                success=False,
+                data=None,
+                error="Slack not connected — run `harbor connect slack` or skip Slack for solo use",
+            )
+        ch = channel or self._resolve_slack_channel()
+        if not ch:
+            return ComposioActionResult(
+                action="SLACK_SEND_MESSAGE",
+                success=False,
+                data=None,
+                error="Set SLACK_CHANNEL_ID in .env or connect Slack with a workspace channel",
+            )
         return self.execute(
             "SLACK_SEND_MESSAGE",
             {"channel": ch, "text": text},
         )
+
+    def _resolve_linear_team_id(self) -> Optional[str]:
+        if self.settings.linear_team_id:
+            return self.settings.linear_team_id
+        teams = self._safe_list("LINEAR_LIST_LINEAR_TEAMS", {})
+        for team in teams:
+            tid = team.get("id") or team.get("team_id")
+            if tid:
+                return str(tid)
+        return None
 
     def create_linear_issue(
         self,
@@ -281,7 +396,7 @@ class ComposioHub:
         team_id: Optional[str] = None,
     ) -> ComposioActionResult:
         args: Dict[str, Any] = {"title": title, "description": description}
-        tid = team_id or self.settings.linear_team_id
+        tid = team_id or self._resolve_linear_team_id()
         if tid:
             args["team_id"] = tid
         return self.execute("LINEAR_CREATE_LINEAR_ISSUE", args)
@@ -298,16 +413,55 @@ class ComposioHub:
             {"owner": owner, "repo": repo, "issue_number": issue_number, "body": body},
         )
 
-    def auth_connect_url(self, toolkit: str) -> str:
-        """Return OAuth connect link for a toolkit."""
-        try:
-            req = self.composio.connected_accounts.initiate(
-                user_id=self.settings.harbor_user_id,
-                auth_config_id=toolkit,
+    def _resolve_auth_config_id(self, toolkit: str) -> str:
+        """Find or create a Composio-managed auth config for a toolkit slug."""
+        slug = toolkit.lower().strip()
+        listed = self.composio.auth_configs.list(toolkit_slug=slug)
+        items = list(getattr(listed, "items", None) or [])
+        for item in items:
+            if getattr(item, "status", "") == "ENABLED":
+                return item.id
+        if items:
+            return items[0].id
+        created = self.composio.auth_configs.create(
+            slug,
+            {"type": "use_composio_managed_auth", "name": f"Harbor {slug}"},
+        )
+        return created.id
+
+    def auth_connect(self, toolkit: str) -> ConnectResult:
+        """Start Composio OAuth for a toolkit; returns a real redirect URL."""
+        slug = toolkit.lower().strip()
+        if slug not in self.TOOLKITS:
+            return ConnectResult(
+                toolkit=slug,
+                error=f"Unknown toolkit '{slug}'. Use: {', '.join(self.TOOLKITS)}",
             )
-            return getattr(req, "redirect_url", str(req))
-        except Exception:
-            return f"https://app.composio.dev — connect {toolkit} for user {self.settings.harbor_user_id}"
+        try:
+            auth_config_id = self._resolve_auth_config_id(slug)
+            req = self.composio.connected_accounts.link(
+                user_id=self.settings.harbor_user_id,
+                auth_config_id=auth_config_id,
+            )
+            self.invalidate_cache()
+            url = req.redirect_url
+            if url and url.startswith(("http://", "https://")):
+                return ConnectResult(toolkit=slug, redirect_url=url)
+            return ConnectResult(
+                toolkit=slug,
+                error="Composio did not return a redirect URL. Try again at https://dashboard.composio.dev",
+            )
+        except Exception as exc:
+            from composio import exceptions as composio_exc
+
+            if isinstance(exc, composio_exc.ComposioMultipleConnectedAccountsError):
+                return ConnectResult(toolkit=slug, already_connected=True)
+            return ConnectResult(toolkit=slug, error=str(exc))
+
+    def auth_connect_url(self, toolkit: str) -> Optional[str]:
+        """Return OAuth redirect URL, or None if already connected / failed."""
+        result = self.auth_connect(toolkit)
+        return result.redirect_url
 
     @property
     def mcp_url(self) -> str:
@@ -320,6 +474,18 @@ class DemoComposioHub(ComposioHub):
     def __init__(self, settings: Optional[Settings] = None):
         super().__init__(settings)
         self._fixture_dir = Path(__file__).resolve().parent.parent.parent / "examples/demo_fixtures"
+
+    def connected_toolkits(self) -> set[str]:
+        return set(self.settings.active_toolkits())
+
+    def integration_status(self) -> Dict[str, bool]:
+        return {slug: slug in self.connected_toolkits() for slug in self.TOOLKITS}
+
+    def _toolkits_for_session(self) -> List[str]:
+        return self.settings.active_toolkits()
+
+    def slack_delivery_ready(self) -> bool:
+        return self.settings.wants_toolkit("slack")
 
     def _load(self, name: str) -> Dict[str, Any]:
         return json.loads((self._fixture_dir / name).read_text())
@@ -337,38 +503,65 @@ class DemoComposioHub(ComposioHub):
         return GmailSnapshot(**data)
 
     def get_openai_tools(self, toolkits: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-        return [
-            {
-                "type": "function",
-                "function": {
-                    "name": "SLACK_SEND_MESSAGE",
-                    "description": "Post a message to Slack",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "channel": {"type": "string"},
-                            "text": {"type": "string"},
+        kits = set(toolkits or self._toolkits_for_session())
+        tools: List[Dict[str, Any]] = []
+        if "slack" in kits:
+            tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "SLACK_SEND_MESSAGE",
+                        "description": "Post a message to Slack",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "channel": {"type": "string"},
+                                "text": {"type": "string"},
+                            },
+                            "required": ["channel", "text"],
                         },
-                        "required": ["channel", "text"],
                     },
-                },
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "LINEAR_CREATE_LINEAR_ISSUE",
-                    "description": "Create a Linear issue",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "title": {"type": "string"},
-                            "description": {"type": "string"},
+                }
+            )
+        if "linear" in kits:
+            tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "LINEAR_CREATE_LINEAR_ISSUE",
+                        "description": "Create a Linear issue",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "title": {"type": "string"},
+                                "description": {"type": "string"},
+                            },
+                            "required": ["title", "description"],
                         },
-                        "required": ["title", "description"],
                     },
-                },
-            },
-        ]
+                }
+            )
+        if "github" in kits:
+            tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "GITHUB_CREATE_ISSUE_COMMENT",
+                        "description": "Comment on a GitHub issue",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "owner": {"type": "string"},
+                                "repo": {"type": "string"},
+                                "issue_number": {"type": "integer"},
+                                "body": {"type": "string"},
+                            },
+                            "required": ["owner", "repo", "issue_number", "body"],
+                        },
+                    },
+                }
+            )
+        return tools
 
     def execute(self, action: str, arguments: Dict[str, Any]) -> ComposioActionResult:
         return ComposioActionResult(action=action, success=True, data={"demo": True, "arguments": arguments})
@@ -380,6 +573,13 @@ class DemoComposioHub(ComposioHub):
         return self.execute(
             "LINEAR_CREATE_LINEAR_ISSUE",
             {"title": title, "description": description, "team_id": team_id},
+        )
+
+    def auth_connect(self, toolkit: str) -> ConnectResult:
+        slug = toolkit.lower().strip()
+        return ConnectResult(
+            toolkit=slug,
+            redirect_url=f"https://connect.composio.dev/link/demo?toolkit={slug}",
         )
 
 

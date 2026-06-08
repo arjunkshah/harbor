@@ -1,28 +1,27 @@
-/** Shared nav + footer — works on GitHub Pages (/harbor/) and local serve */
-function harborNav(active) {
-  const u = window.harborUrl;
-  const links = [
-    { href: u(""), label: "Home", id: "home" },
-    { href: u("docs.html"), label: "Docs", id: "docs" },
-    { href: u("dashboard.html"), label: "Dashboard", id: "dashboard" },
-    { href: "https://github.com/arjunkshah/harbor", label: "GitHub", external: true },
-  ];
-  return links
-    .map((l) => {
-      const cls = active === l.id ? ' class="active"' : "";
-      const ext = l.external ? ' target="_blank" rel="noopener"' : "";
-      return `<a href="${l.href}"${cls}${ext}>${l.label}</a>`;
-    })
-    .join("");
-}
-
+/** Shared nav — public site (GitHub Pages) vs local dashboard (harbor serve) */
 function injectNav(active) {
   const el = document.getElementById("nav-links");
   if (!el) return;
-  const dash = window.harborUrl("dashboard.html");
-  el.innerHTML =
-    harborNav(active) +
-    ` <a href="${dash}" class="btn btn-primary" style="padding:8px 16px;font-size:0.85rem">Open dashboard</a>`;
+
+  const site = document.body.dataset.site || "public";
+
+  if (site === "local") {
+    el.innerHTML = `
+      <a href="/dashboard"${active === "dashboard" ? ' class="active"' : ""}>Dashboard</a>
+      <a href="/docs">Docs</a>
+      <a href="https://github.com/arjunkshah/harbor" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://arjunkshah.github.io/harbor/" target="_blank" rel="noopener" class="btn btn-ghost" style="padding:8px 16px;font-size:0.85rem">Project site</a>
+    `;
+    return;
+  }
+
+  const u = window.harborUrl;
+  el.innerHTML = `
+    <a href="${u("index.html")}"${active === "home" ? ' class="active"' : ""}>Home</a>
+    <a href="${u("docs.html")}"${active === "docs" ? ' class="active"' : ""}>Docs</a>
+    <a href="https://github.com/arjunkshah/harbor" target="_blank" rel="noopener">GitHub</a>
+    <a href="${u("index.html")}#start" class="btn btn-primary" style="padding:8px 16px;font-size:0.85rem">Install</a>
+  `;
 }
 
 document.addEventListener("DOMContentLoaded", () => injectNav(document.body.dataset.page || ""));

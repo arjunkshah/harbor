@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from harbor.agent.prompts import INCIDENT_COMMANDER_SYSTEM, MORNING_BRIEF_SYSTEM
 from harbor.composio import get_composio
 from harbor.config import Settings, get_settings
+from harbor.integrations import incident_instructions, morning_brief_instructions
 from harbor.memory import compress_for_turn
 from harbor.nebius import get_nebius
 from harbor.tavily import get_tavily
@@ -154,8 +155,9 @@ class HarborAgent:
         tavily_social = self.tavily.social_pulse(f"{company} {focus}")
         tavily_intel = self.tavily.company_intel(company)
 
-        self._log(turns, 0, "composio", "Gathering GitHub + Linear + Gmail")
+        self._log(turns, 0, "composio", "Gathering from connected apps")
         composio_data = self.composio.gather_all()
+        status = self.composio.integration_status()
 
         context_blocks = [
             tavily_news.to_context_block(),
@@ -164,11 +166,9 @@ class HarborAgent:
             *composio_data.all_context_blocks(),
         ]
 
-        user_prompt = (
-            "Produce a morning brief for the builder. Then:\n"
-            "1. Post the brief to Slack (use SLACK_SEND_MESSAGE)\n"
-            "2. Create Linear tickets for any blocked items with clear titles\n"
-            "Keep the brief under 400 words with sections: GitHub, Linear, Gmail, Market intel, Actions."
+        user_prompt = morning_brief_instructions(
+            connected=status,
+            slack_ready=self.composio.slack_delivery_ready(),
         )
 
         result = self.run_with_tools(
@@ -203,14 +203,14 @@ class HarborAgent:
         tavily_status.extracted = tavily_extract
 
         composio_data = self.composio.gather_all()
-
+        status = self.composio.integration_status()
         user_prompt = (
             f"Incident: {incident_query}\n"
             f"Service: {service_name}\n\n"
-            "1. Write severity assessment\n"
-            "2. Post Slack status update\n"
-            "3. Create Linear incident ticket\n"
-            "4. If a matching GitHub issue exists, add a comment"
+            + incident_instructions(
+                connected=status,
+                slack_ready=self.composio.slack_delivery_ready(),
+            )
         )
 
         return self.run_with_tools(

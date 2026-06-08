@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-import re
 import shutil
 import subprocess
 import sys
 import webbrowser
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
+
+from harbor.integrations import INTEGRATIONS, SOLO_DEFAULT_TOOLKITS
 
 ROOT = Path(__file__).resolve().parent.parent
 ENV_EXAMPLE = ROOT / ".env.example"
@@ -26,13 +27,22 @@ ENV_FIELDS = [
     ("TAVILY_API_KEY", "Tavily API key", True, "https://app.tavily.com"),
     ("NEBIUS_MODEL", "Nebius model ID", False, "moonshotai/Kimi-K2-Instruct-0905"),
     ("HARBOR_USER_ID", "Composio user ID (unique per builder)", False, "harbor-builder-001"),
-    ("GITHUB_OWNER", "Optional: limit GitHub to one org/user (leave blank = whole account)", False, ""),
+    (
+        "COMPOSIO_TOOLKITS",
+        "Apps to enable (comma-separated)",
+        False,
+        ",".join(SOLO_DEFAULT_TOOLKITS),
+    ),
+    ("GITHUB_OWNER", "Optional: limit GitHub to one org/user (blank = whole account)", False, ""),
     ("GITHUB_REPO", "Optional: limit to one repo (requires GITHUB_OWNER)", False, ""),
-    ("SLACK_CHANNEL_ID", "Slack channel ID (C…)", False, ""),
-    ("LINEAR_TEAM_ID", "Linear team UUID", False, ""),
+    (
+        "SLACK_CHANNEL_ID",
+        "Optional: Slack channel ID — only if you added slack to COMPOSIO_TOOLKITS",
+        False,
+        "",
+    ),
+    ("LINEAR_TEAM_ID", "Optional: Linear team UUID (blank = your default team)", False, ""),
 ]
-
-COMPOSIO_TOOLKITS = ["github", "slack", "linear", "gmail"]
 
 
 def _read_env() -> Dict[str, str]:
@@ -81,12 +91,30 @@ def _mask(value: str) -> str:
     return value[:4] + "…" + value[-4:]
 
 
+def _connect_toolkit(composio, slug: str) -> None:
+    result = composio.auth_connect(slug)
+    if result.already_connected:
+        console.print(f"  [green]✓ {slug} already connected[/green]\n")
+    elif result.redirect_url:
+        console.print(f"  → {result.redirect_url}\n")
+        try:
+            webbrowser.open(result.redirect_url)
+        except Exception:
+            pass
+        console.print("[dim]  Complete OAuth in your browser, then return here.[/dim]\n")
+    else:
+        console.print(f"  [red]✗ {result.error or 'Could not get connect link'}[/red]")
+        console.print(
+            f"  [dim]Try: harbor connect {slug}[/dim] or https://dashboard.composio.dev\n"
+        )
+
+
 def run_setup(*, open_dashboard: bool = True, skip_connect: bool = False) -> bool:
     """Full interactive setup. Returns True if doctor passes."""
     console.print(
         Panel.fit(
             "[bold cyan]Harbor Setup[/bold cyan]\n"
-            "We'll configure API keys, app targets, and verify your stack.\n"
+            "Built for solo founders — connect what you use, skip the rest.\n"
             "Press [dim]Enter[/dim] to keep an existing value.",
             border_style="cyan",
         )
@@ -99,6 +127,8 @@ def run_setup(*, open_dashboard: bool = True, skip_connect: bool = False) -> boo
     existing = _read_env()
     updated = dict(existing)
     updated["HARBOR_DEMO"] = "0"
+    if not updated.get("COMPOSIO_TOOLKITS"):
+        updated["COMPOSIO_TOOLKITS"] = ",".join(SOLO_DEFAULT_TOOLKITS)
 
     console.print("\n[bold]Step 1 — API keys[/bold] (BuilderShip sponsor credits)\n")
     for key, label, secret, default in ENV_FIELDS:
@@ -124,7 +154,6 @@ def run_setup(*, open_dashboard: bool = True, skip_connect: bool = False) -> boo
     _write_env(updated)
     console.print(f"\n[green]✓ Saved {ENV_FILE}[/green]")
 
-    # Reload settings
     from harbor.config import get_settings
 
     get_settings.cache_clear()
@@ -143,19 +172,28 @@ def run_setup(*, open_dashboard: bool = True, skip_connect: bool = False) -> boo
         console.print("[green]✓ Checkpoint already exists[/green]")
 
     if not skip_connect:
-        console.print("\n[bold]Step 3 — Connect Composio apps[/bold] (OAuth in browser)\n")
+        console.print("\n[bold]Step 3 — Connect your apps[/bold] (OAuth in browser)\n")
+        console.print(
+            "[dim]Harbor works great with just GitHub. Linear + Gmail are optional. "
+            "Slack is only for team broadcasts — solo builders can skip it.[/dim]\n"
+        )
         if updated.get("COMPOSIO_API_KEY"):
             from harbor.composio import get_composio
 
             composio = get_composio()
-            for toolkit in COMPOSIO_TOOLKITS:
-                if Confirm.ask(f"  Connect [cyan]{toolkit}[/cyan] now?", default=True):
-                    url = composio.auth_connect_url(toolkit)
-                    console.print(f"  → {url}\n")
-                    try:
-                        webbrowser.open(url)
-                    except Exception:
-                        pass
+            enabled = {
+                part.strip().lower()
+                for part in updated.get("COMPOSIO_TOOLKITS", "").split(",")
+                if part.strip()
+            }
+            for info in INTEGRATIONS:
+                if info.slug not in enabled:
+                    continue
+                default_yes = info.recommended
+                prompt = f"  Connect [cyan]{info.label}[/cyan]? [dim]{info.blurb}[/dim]"
+                console.print(prompt)
+                if Confirm.ask(f"  Connect {info.slug} now?", default=default_yes):
+                    _connect_toolkit(composio, info.slug)
         else:
             console.print("[yellow]  Skip — add COMPOSIO_API_KEY first[/yellow]")
 
@@ -165,7 +203,7 @@ def run_setup(*, open_dashboard: bool = True, skip_connect: bool = False) -> boo
     ok = run_doctor()
 
     console.print("\n[bold]Step 5 — Launch[/bold]\n")
-    console.print("  [cyan]harbor brief[/cyan]     — run morning brief")
+    console.print("  [cyan]harbor brief[/cyan]     — morning brief (saved to .harbor/briefs/)")
     console.print("  [cyan]harbor serve[/cyan]     — web UI + dashboard")
     console.print("  [cyan]harbor dashboard[/cyan] — open dashboard in browser\n")
 
@@ -182,9 +220,12 @@ def run_setup(*, open_dashboard: bool = True, skip_connect: bool = False) -> boo
 def env_status() -> Dict[str, Any]:
     """Masked config for dashboard API."""
     from harbor.config import get_settings
+    from harbor.composio import get_composio
 
     s = get_settings()
     e = _read_env()
+    composio = get_composio()
+    connected = composio.integration_status()
     return {
         "demo_mode": s.demo_mode,
         "harbor_user_id": s.harbor_user_id,
@@ -192,6 +233,8 @@ def env_status() -> Dict[str, Any]:
         "github_repo": s.github_repo or None,
         "slack_channel_id": s.slack_channel_id or None,
         "linear_team_id": s.linear_team_id or None,
+        "composio_toolkits": s.active_toolkits(),
+        "integrations": connected,
         "nebius_model": s.nebius_model,
         "keys": {
             "nebius": bool(s.has_nebius()),

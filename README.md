@@ -35,15 +35,16 @@ python3 -m pip install -e .
 harbor setup
 ```
 
-### Web app
+### Web
 
-**Public site (GitHub Pages):** https://arjunkshah.github.io/harbor/
+**Project site (GitHub Pages)** — what Harbor is, how it works, docs, install:  
+https://arjunkshah.github.io/harbor/
 
-**Local dashboard** (runs workflows — needs API keys):
+**Local dashboard** — integrations, run history, live briefs (not on GitHub Pages):
 
 ```bash
 harbor serve
-# http://localhost:8787/dashboard
+# → http://127.0.0.1:8787/dashboard
 ```
 
 ---
@@ -54,7 +55,7 @@ harbor serve
 |---------|-------------|
 | **`harbor setup`** | Interactive wizard — API keys → `.env` → checkpoint → Composio OAuth → doctor |
 | `harbor dashboard` | Open dashboard (starts server) |
-| `harbor serve` | Web + docs + dashboard + API |
+| `harbor serve` | Local server — dashboard + API (not GitHub Pages) |
 | `harbor brief` | Morning brief workflow |
 | `harbor incident "…"` | Incident commander |
 | `harbor doctor` | Verify integrations |

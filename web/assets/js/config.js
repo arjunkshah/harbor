@@ -4,6 +4,7 @@
   const isGhProject =
     path.startsWith("/harbor/") || path === "/harbor" || path.endsWith("/harbor");
   window.HARBOR_BASE = isGhProject ? "/harbor/" : "/";
+  window.HARBOR_PUBLIC_SITE = isGhProject;
 
   window.harborUrl = function harborUrl(rel) {
     const clean = String(rel || "").replace(/^\//, "");

@@ -19,6 +19,7 @@ from harbor.store import get_run, list_runs, stats
 from harbor.workflows import run_incident_commander, run_morning_brief
 
 WEB_DIR = Path(__file__).resolve().parent.parent.parent / "web"
+LOCAL_DIR = Path(__file__).resolve().parent.parent.parent / "local"
 
 logging.basicConfig(level=get_settings().harbor_log_level)
 logger = logging.getLogger(__name__)
@@ -33,6 +34,9 @@ app = FastAPI(
 
 if (WEB_DIR / "assets").is_dir():
     app.mount("/assets", StaticFiles(directory=WEB_DIR / "assets"), name="assets")
+
+if (LOCAL_DIR / "assets").is_dir():
+    app.mount("/local/assets", StaticFiles(directory=LOCAL_DIR / "assets"), name="local_assets")
 
 
 def _page(name: str) -> FileResponse:
@@ -54,7 +58,10 @@ def docs_page() -> FileResponse:
 
 @app.get("/dashboard")
 def dashboard_page() -> FileResponse:
-    return _page("dashboard.html")
+    path = LOCAL_DIR / "dashboard.html"
+    if not path.exists():
+        raise HTTPException(404, "Local dashboard not found")
+    return FileResponse(path)
 
 
 @app.get("/setup")

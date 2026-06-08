@@ -57,13 +57,23 @@ def run_doctor_checks(settings: Settings | None = None) -> List[CheckResult]:
         c = get_composio(s)
         gh = c.gather_github()
         tools = c.get_openai_tools()
+        connected = c.integration_status()
+        linked = [name for name, ok in connected.items() if ok]
         results.append(
             CheckResult(
                 "Composio toolkits",
                 True,
-                f"{len(tools)} tools loaded, {len(gh.prs_needing_review)} open PRs in snapshot",
+                f"{len(tools)} tools loaded, connected: {', '.join(linked) or 'none yet — run harbor connect github'}",
             )
         )
+        if gh.prs_needing_review or gh.open_issues or gh.recent_commits:
+            results.append(
+                CheckResult(
+                    "GitHub snapshot",
+                    True,
+                    f"{len(gh.prs_needing_review)} PRs, {len(gh.open_issues)} issues, {len(gh.recent_commits)} commits",
+                )
+            )
     except Exception as exc:
         results.append(CheckResult("Composio toolkits", False, str(exc)))
 

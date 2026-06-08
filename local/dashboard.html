@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard — Harbor</title>
+  <title>Harbor — Local dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
-<body data-page="dashboard">
+<body data-page="dashboard" data-site="local">
   <div class="noise"></div>
   <div class="glow-orb glow-orb--1"></div>
   <div class="glow-orb glow-orb--2"></div>
 
   <nav class="nav">
     <div class="container nav-inner">
-      <a href="index.html" class="logo">⚓ Harbor</a>
+      <a href="/dashboard" class="logo">⚓ Harbor</a>
       <div class="nav-links" id="nav-links"></div>
     </div>
   </nav>
@@ -24,16 +24,18 @@
   <main class="container">
     <div id="setup-banner">
       <div class="alert alert-info" style="margin-top:24px" id="static-notice">
-        <strong>Live dashboard</strong> runs on your machine (<code>harbor serve</code> → localhost:8787/dashboard).
-        This page connects to the API when the server is running.
+        <strong>Local only.</strong> This dashboard runs on your machine — integration management, run history, and live briefs.
+        The public site is at <a href="https://arjunkshah.github.io/harbor/" target="_blank" rel="noopener">arjunkshah.github.io/harbor</a>.
       </div>
     </div>
 
     <header class="dashboard-header">
       <div>
-        <p class="section-label" style="margin-bottom:8px">Your harbor</p>
+        <p class="section-label" style="margin-bottom:8px">Local · <span id="health-status">checking…</span></p>
         <h1>Dashboard</h1>
-        <p style="color:var(--text-muted);font-size:0.95rem;margin-top:8px">Run briefs, track KV savings, view Composio actions.</p>
+        <p style="color:var(--text-muted);font-size:0.95rem;margin-top:8px">
+          Connect apps, run briefs, browse history. Requires <code>harbor serve</code>.
+        </p>
       </div>
       <button type="button" class="btn btn-ghost" id="btn-refresh">Refresh</button>
     </header>
@@ -67,6 +69,9 @@
         <div class="panel">
           <div class="panel-title">Configuration</div>
           <div id="config-panel"></div>
+          <p style="margin-top:12px;font-size:0.82rem;color:var(--text-muted)">
+            Manage keys & OAuth: <code>harbor setup</code> · <code>harbor connect github</code>
+          </p>
         </div>
 
         <div class="panel">
@@ -102,13 +107,14 @@
 
   <footer>
     <div class="container">
-      <a href="docs.html">Docs</a>
+      <a href="/docs">Docs</a>
       <a href="https://github.com/arjunkshah/harbor">GitHub</a>
-      <p style="margin-top:12px">Local dashboard · requires <code>harbor serve</code></p>
+      <a href="https://arjunkshah.github.io/harbor/">Project site</a>
+      <p style="margin-top:12px">Local dashboard · <code>harbor serve</code> · port 8787</p>
     </div>
   </footer>
-  <script src="assets/js/config.js"></script>
-  <script src="assets/js/shared.js"></script>
-  <script src="assets/js/dashboard.js"></script>
+  <script src="/assets/js/config.js"></script>
+  <script src="/assets/js/shared.js"></script>
+  <script src="/local/assets/js/dashboard.js"></script>
 </body>
 </html>
